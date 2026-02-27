@@ -1,5 +1,6 @@
 const User = require("../models/user");
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const saltRound = 10
 const createUserService = async (name, email, password) => {
@@ -26,16 +27,24 @@ const loginService = async (email1, password) => {
         if (user) {
             const isMatchPassword = await bcrypt.compare(password, user.password)
 
-            if(!isMatchPassword) {
+            if (!isMatchPassword) {
                 return {
                     EC: 2,
                     EM: "Password is not match"
                 }
-            }else {
-                return "Login success"
+            } else {
+                const payload = { email: user.email, name: user.name }
+                const access_token = jwt.sign(
+                    payload,
+                    process.env.JWT_SECRET,
+                    { expiresIn: process.env.JWT_EXPIRES_IN })
+                return {
+                    user:{email1: user.email, name: user.name},
+                    access_token
+                }
             }
 
-        }else {
+        } else {
             return {
                 EC: 1,
                 EM: "User not found"
