@@ -19,6 +19,8 @@ const getUser = async (req, res) => {
     return res.status(200).json(data);
 }
 const getAccount = async (req, res) => {
+        console.log(">>> Check req.body:getAccount ", req.body);
+
     return res.status(200).json(req.user);
 }
 

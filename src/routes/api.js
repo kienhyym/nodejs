@@ -2,7 +2,7 @@ const express = require('express');
 const { route } = require('express/lib/application');
 const router = require('express/lib/router');
 const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
-// const auth = require('../middleware/auth');
+const auth = require('../middleware/auth');
 
 const routerAPI = express.Router();
 
@@ -13,9 +13,9 @@ routerAPI.get('/',  (req, res) => {
 
 routerAPI.post('/register', CreateUser);
 
-routerAPI.post('/login', handleLogin);
+routerAPI.post('/login',auth, handleLogin);
 routerAPI.get('/user', getUser);
-routerAPI.get('/account', getAccount);
+routerAPI.get('/account',auth, getAccount);
 
 
 module.exports = routerAPI; //export default
