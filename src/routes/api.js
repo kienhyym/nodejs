@@ -13,7 +13,7 @@ routerAPI.get('/',  (req, res) => {
 
 routerAPI.post('/register', CreateUser);
 
-routerAPI.post('/login',auth, handleLogin);
+routerAPI.post('/login', handleLogin);
 routerAPI.get('/user', getUser);
 routerAPI.get('/account',auth, getAccount);
 
