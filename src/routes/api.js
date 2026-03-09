@@ -21,16 +21,24 @@ routerAPI.get('/account',auth, getAccount);
 
 routerAPI.post(
   "/lecture",
-  upload.array("videos", 10), // tối đa 10 video
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "videos", maxCount: 10 }
+  ]),
   createLecture
 );
+
 routerAPI.get("/lectures", getLectures);
 
 routerAPI.put(
   "/lecture/:id",
-  upload.array("videos", 10), // tối đa 10 video
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "videos", maxCount: 10 }
+  ]),
   updateLecture
 );
+
 routerAPI.get("/lecture/:id", getLectureDetail);
 routerAPI.delete("/lecture/:id", deleteLecture);
 module.exports = routerAPI; //export default

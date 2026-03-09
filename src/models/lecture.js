@@ -6,9 +6,8 @@ const lectureSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-
+  thumbnail: String,
   description: String,
-
   createdAt: {
     type: Date,
     default: Date.now
