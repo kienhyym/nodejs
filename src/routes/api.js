@@ -3,8 +3,12 @@ const { route } = require('express/lib/application');
 const router = require('express/lib/router');
 const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
 const auth = require('../middleware/auth');
-const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture} = require("../controllers/lectureController");
+const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture} = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
+const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
+const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion } = require('../controllers/questionController');
+const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
+const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
 
 const routerAPI = express.Router();
 
@@ -38,7 +42,78 @@ routerAPI.put(
   ]),
   updateLecture
 );
-
 routerAPI.get("/lecture/:id", getLectureDetail);
 routerAPI.delete("/lecture/:id", deleteLecture);
+routerAPI.get(
+  "/lectures/:lectureId/exams/status-count",
+  countExamStatusByLecture
+);
+
+
+
+// +++++++++ EXAMS ++++++++++++++
+routerAPI.post('/exams', createExam);
+routerAPI.put("/exams/:id", updateExam);
+routerAPI.get("/exams", getExams);
+routerAPI.get("/exams/:id", getExamDetail);
+routerAPI.delete("/exams/:id", deleteExam);
+routerAPI.patch("/exams/:id/status", toggleExamStatus);
+// +++++++++ QUESTIONS ++++++++++++++
+
+routerAPI.post(
+  "/questions",
+  upload.single("image"),
+  createQuestion
+);
+
+routerAPI.put(
+  "/questions/:id",
+  upload.single("image"),
+  updateQuestion
+);
+routerAPI.get("/questions", getQuestions);
+routerAPI.get("/questions/:id", getQuestionDetail);
+routerAPI.delete("/questions/:id", deleteQuestion);
+
+// +++++++++ OPTIONS ++++++++++++++
+routerAPI.post(
+  "/options",
+  upload.single("image"),
+  createOption
+);
+
+routerAPI.put(
+  "/options/:id",
+  upload.single("image"),
+  updateOption
+);
+
+routerAPI.get("/options", getOptions);
+
+routerAPI.get("/options/:id", getOptionDetail);
+
+routerAPI.delete("/options/:id", deleteOption);
+
+
+// +++++++++ EXTEND ++++++++++++++
+
+routerAPI.post(
+  "/extend",
+  upload.fields([
+    { name: "videos", maxCount: 1 }
+  ]),
+  createExtend
+);
+routerAPI.put(
+  "/extend/:id",
+  upload.fields([
+    { name: "videos", maxCount: 1 }
+  ]),
+  updateExtend
+);
+routerAPI.get("/extend", getExtends);
+routerAPI.get("/extend/:id", getExtendDetail);
+routerAPI.delete("/extend/:id", deleteExtend);
+
+
 module.exports = routerAPI; //export default

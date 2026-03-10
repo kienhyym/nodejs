@@ -3,6 +3,7 @@ const r2 = require("../config/cloudR2");
 
 const Lecture = require("../models/lecture");
 const Video = require("../models/video");
+const Exam = require("../models/exam");
 
 const createLecture = async (req, res) => {
 
@@ -17,7 +18,7 @@ const createLecture = async (req, res) => {
 
             const file = req.files.thumbnail[0];
 
-            const fileName = `thumbnail/${Date.now()}-${file.originalname}`;
+            const fileName = `images/${Date.now()}-${file.originalname}`;
 
             const command = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -45,7 +46,7 @@ const createLecture = async (req, res) => {
 
             for (const file of req.files.videos) {
 
-                const fileName = `video/${Date.now()}-${file.originalname}`;
+                const fileName = `videos/${Date.now()}-${file.originalname}`;
 
                 const command = new PutObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
@@ -188,7 +189,7 @@ const updateLecture = async (req, res) => {
 
             const file = req.files.thumbnail[0];
 
-            const fileName = `thumbnails/${Date.now()}-${file.originalname}`;
+            const fileName = `images/${Date.now()}-${file.originalname}`;
 
             const uploadCommand = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -339,4 +340,46 @@ const deleteLecture = async (req, res) => {
     }
 
 };
-module.exports = { createLecture, getLectures, getLectureDetail, updateLecture, deleteLecture };
+const countExamStatusByLecture = async (req, res) => {
+
+    try {
+
+        const lectureId = req.params.lectureId;
+
+        const open = await Exam.countDocuments({
+            lectureId,
+            status: true
+        });
+
+        const closed = await Exam.countDocuments({
+            lectureId,
+            status: false
+        });
+
+        res.json({
+            lectureId,
+            open,
+            closed
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Count exam failed",
+            error: error.message
+        });
+
+    }
+
+};
+
+module.exports = {
+    createLecture,
+    getLectures,
+    getLectureDetail,
+    updateLecture,
+    deleteLecture,
+    countExamStatusByLecture
+};
