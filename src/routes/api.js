@@ -9,6 +9,7 @@ const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamS
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion } = require('../controllers/questionController');
 const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
+const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
 
 const routerAPI = express.Router();
 
@@ -114,6 +115,26 @@ routerAPI.put(
 routerAPI.get("/extend", getExtends);
 routerAPI.get("/extend/:id", getExtendDetail);
 routerAPI.delete("/extend/:id", deleteExtend);
+
+
+// +++++++++ KNOWLEDGE ++++++++++++++
+
+routerAPI.post(
+  "/knowledge",
+  upload.single("image"),
+  createKnowledge
+);
+
+routerAPI.put(
+  "/knowledge/:id",
+  upload.fields([
+    { name: "image", maxCount: 1 }
+  ]),
+  updateKnowledge
+);
+routerAPI.get("/knowledge", getKnowledges);
+routerAPI.get("/knowledge/:id", getKnowledgeDetail);
+routerAPI.delete("/knowledge/:id", deleteKnowledge);
 
 
 module.exports = routerAPI; //export default
