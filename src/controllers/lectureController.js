@@ -4,6 +4,8 @@ const r2 = require("../config/cloudR2");
 const Lecture = require("../models/lecture");
 const Video = require("../models/video");
 const Exam = require("../models/exam");
+const Question = require("../models/question");
+const Option = require("../models/option");
 
 const createLecture = async (req, res) => {
 
@@ -375,11 +377,115 @@ const countExamStatusByLecture = async (req, res) => {
 
 };
 
+
+const getQuestionsByLecture = async (req, res) => {
+
+    try {
+
+        const lectureId = req.params.lectureId;
+
+        const questions = await Question.find({
+            lectureId
+        }).sort({ createdAt: 1 });
+
+        const result = [];
+
+        for (const q of questions) {
+
+            const options = await Option.find({
+                questionId: q._id
+            });
+
+            result.push({
+                _id: q._id,
+                content: q.content,
+                image: q.image,
+                type: q.type,
+                options
+            });
+
+        }
+
+        res.json({
+            lectureId,
+            totalQuestion: result.length,
+            questions: result
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Get questions failed",
+            error: error.message
+        });
+
+    }
+
+};
+const importQuestions = async (req, res) => {
+
+    try {
+
+        const lectureId = req.params.lectureId;
+        if (!req.file) {
+            return res.status(400).json({
+                message: "File JSON is required"
+            });
+        }
+        const jsonData = JSON.parse(req.file.buffer.toString());
+
+        const questions =  jsonData.data;
+        let createdQuestions = 0;
+
+        for (const q of questions) {
+            console.log('q',q)
+            const question = await Question.create({
+                lectureId,
+                content: q.content,
+                type: q.type,
+                image:q.image
+            });
+
+            const options = q.options.map(opt => ({
+                questionId: question._id,
+                content: opt.content,
+                isCorrect: opt.isCorrect,
+                image:opt.image
+            }));
+
+            await Option.insertMany(options);
+
+            createdQuestions++;
+
+        }
+
+        res.json({
+            message: "Import questions success",
+            lectureId,
+            total: createdQuestions
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Import questions failed",
+            error: error.message
+        });
+
+    }
+
+};
 module.exports = {
     createLecture,
     getLectures,
     getLectureDetail,
     updateLecture,
     deleteLecture,
-    countExamStatusByLecture
+    countExamStatusByLecture,
+    getQuestionsByLecture,
+    importQuestions
 };

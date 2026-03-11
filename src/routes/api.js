@@ -3,7 +3,7 @@ const { route } = require('express/lib/application');
 const router = require('express/lib/router');
 const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
 const auth = require('../middleware/auth');
-const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture} = require("../controllers/lectureController");
+const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions} = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
 const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion } = require('../controllers/questionController');
@@ -135,6 +135,16 @@ routerAPI.put(
 routerAPI.get("/knowledge", getKnowledges);
 routerAPI.get("/knowledge/:id", getKnowledgeDetail);
 routerAPI.delete("/knowledge/:id", deleteKnowledge);
+
+
+
+routerAPI.get("/lectures/:lectureId/questions", getQuestionsByLecture);
+
+routerAPI.post(
+  "/lectures/:lectureId/questions/import",
+  upload.single("file"),
+  importQuestions
+);
 
 
 module.exports = routerAPI; //export default
