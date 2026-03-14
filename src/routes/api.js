@@ -3,13 +3,14 @@ const { route } = require('express/lib/application');
 const router = require('express/lib/router');
 const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
 const auth = require('../middleware/auth');
-const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions} = require("../controllers/lectureController");
+const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture} = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
 const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion } = require('../controllers/questionController');
 const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
+const { updateTitleVideo } = require('../controllers/videoController');
 
 const routerAPI = express.Router();
 
@@ -145,6 +146,9 @@ routerAPI.post(
   upload.single("file"),
   importQuestions
 );
+
+routerAPI.delete("/lectures/:lectureId/questions", deleteQuestionsByLecture);
+routerAPI.put("/video/:id", updateTitleVideo);
 
 
 module.exports = routerAPI; //export default

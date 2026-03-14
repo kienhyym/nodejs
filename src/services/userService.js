@@ -9,7 +9,6 @@ const createUserService = async (name, email, password) => {
 //check email exist
         const user = await User.findOne({ email });
         if (user) {
-            console.log(">>> Email is exist: ", email);
             return null;
         }
             

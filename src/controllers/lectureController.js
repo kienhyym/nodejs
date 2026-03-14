@@ -18,6 +18,7 @@ const createLecture = async (req, res) => {
         // upload thumbnail
         if (req.files.thumbnail) {
 
+
             const file = req.files.thumbnail[0];
 
             const fileName = `images/${Date.now()}-${file.originalname}`;
@@ -47,8 +48,11 @@ const createLecture = async (req, res) => {
         if (req.files.videos) {
 
             for (const file of req.files.videos) {
+                const displayName = Buffer
+                    .from(file.originalname, "latin1")
+                    .toString("utf8").slice(0, -4);
 
-                const fileName = `videos/${Date.now()}-${file.originalname}`;
+                const fileName = `videos/${Date.now()}.mp4`;
 
                 const command = new PutObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
@@ -64,7 +68,8 @@ const createLecture = async (req, res) => {
                 const video = await Video.create({
                     lectureId: lecture._id,
                     videoUrl,
-                    fileName
+                    fileName,
+                    displayName
                 });
 
                 videos.push(video);
@@ -239,8 +244,11 @@ const updateLecture = async (req, res) => {
         if (req.files?.videos && req.files.videos.length > 0) {
 
             for (const file of req.files.videos) {
+                const displayName = Buffer
+                    .from(file.originalname, "latin1")
+                    .toString("utf8").slice(0, -4);
 
-                const fileName = `videos/${Date.now()}-${file.originalname}`;
+                const fileName = `videos/${Date.now()}.mp4`;
 
                 const uploadCommand = new PutObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
@@ -256,7 +264,8 @@ const updateLecture = async (req, res) => {
                 const video = await Video.create({
                     lectureId,
                     videoUrl,
-                    fileName
+                    fileName,
+                    displayName
                 });
 
                 newVideos.push(video);
@@ -436,23 +445,23 @@ const importQuestions = async (req, res) => {
         }
         const jsonData = JSON.parse(req.file.buffer.toString());
 
-        const questions =  jsonData.data;
+        const questions = jsonData.data;
         let createdQuestions = 0;
 
         for (const q of questions) {
-            console.log('q',q)
+            console.log('q', q)
             const question = await Question.create({
                 lectureId,
                 content: q.content,
                 type: q.type,
-                image:q.image
+                image: q.image
             });
 
             const options = q.options.map(opt => ({
                 questionId: question._id,
                 content: opt.content,
                 isCorrect: opt.isCorrect,
-                image:opt.image
+                image: opt.image
             }));
 
             await Option.insertMany(options);
@@ -479,6 +488,47 @@ const importQuestions = async (req, res) => {
     }
 
 };
+
+const deleteQuestionsByLecture = async (req, res) => {
+
+    try {
+
+        const lectureId = req.params.lectureId;
+
+        // tìm tất cả question của lecture
+        const questions = await Question.find({
+            lectureId
+        });
+
+        const questionIds = questions.map(q => q._id);
+
+        // xoá options
+        await Option.deleteMany({
+            questionId: { $in: questionIds }
+        });
+
+        // xoá questions
+        await Question.deleteMany({
+            lectureId
+        });
+
+        res.json({
+            message: "Delete questions success",
+            deletedQuestions: questionIds.length
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Delete questions failed",
+            error: error.message
+        });
+
+    }
+
+};
 module.exports = {
     createLecture,
     getLectures,
@@ -487,5 +537,6 @@ module.exports = {
     deleteLecture,
     countExamStatusByLecture,
     getQuestionsByLecture,
-    importQuestions
+    importQuestions,
+    deleteQuestionsByLecture
 };

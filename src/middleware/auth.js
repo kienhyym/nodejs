@@ -7,7 +7,6 @@ const auth = (req, res, next) => {
     } else {
         if (req?.headers?.authorization?.split(' ')[1]) {
             const token = req.headers.authorization.split(' ')[1];
-            console.log(">>> Check token: ", token);
             try {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
                 req.user = {
@@ -15,10 +14,8 @@ const auth = (req, res, next) => {
                     name: decoded.name,
                     createBy:"kien"
                 };
-                console.log(">>> Check decoded: ", decoded);
                 next()
             } catch (error) {
-                console.log(">>> Check error: ", error);
                 return res.status(401).json({
                     EC: 1,
                     message: "Unauthorized"

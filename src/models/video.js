@@ -9,7 +9,15 @@ const videoSchema = new mongoose.Schema({
 
   videoUrl: String,
 
-  fileName: String,
+  displayName: {
+    type: String,
+    required: true
+  },
+
+  fileName: {
+    type: String,
+    required: true
+  },
 
   createdAt: {
     type: Date,
