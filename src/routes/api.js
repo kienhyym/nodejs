@@ -11,6 +11,7 @@ const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } 
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
 const { updateTitleVideo } = require('../controllers/videoController');
+const { createAchievements, getAchievements } = require('../controllers/achievementsController');
 
 const routerAPI = express.Router();
 
@@ -163,5 +164,8 @@ routerAPI.post(
 routerAPI.delete("/lectures/:lectureId/questions", deleteQuestionsByLecture);
 routerAPI.put("/video/:id", updateTitleVideo);
 
+// +++++++++ ACHIEVEMENTS ++++++++++++++
+routerAPI.post('/achievements/:lectureId', createAchievements);
+routerAPI.get("/achievements", getAchievements);
 
 module.exports = routerAPI; //export default
