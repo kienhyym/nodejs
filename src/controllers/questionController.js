@@ -1,7 +1,7 @@
 const Question = require("../models/question");
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const r2 = require("../config/cloudR2");
-
+const Option = require("../models/option");
 const createQuestion = async (req, res) => {
 
     try {
@@ -137,7 +137,6 @@ const getQuestions = async (req, res) => {
     }
 
 };
-const Option = require("../models/option");
 
 const getQuestionDetail = async (req, res) => {
 
@@ -179,7 +178,6 @@ const deleteQuestion = async (req, res) => {
     try {
 
         const questionId = req.params.id;
-
         const question = await Question.findById(questionId);
 
         if (!question) {
@@ -211,10 +209,464 @@ const deleteQuestion = async (req, res) => {
 
 };
 
+
+const createQuestionWithOptions = async (req, res) => {
+
+    try {
+
+        const { question, type, correctAnswer } = req.body;
+        const lectureId = req.params.lectureId;
+        if (!question) {
+            return res.status(400).json({
+                message: "Question content is required"
+            });
+        }
+
+        let questionImageUrl = null;
+
+        // tìm file questionImage
+        const questionImageFile = req.files.find(
+            f => f.fieldname === "questionImage"
+        );
+
+        if (questionImageFile) {
+
+            const fileName = `questions/${Date.now()}-${questionImageFile.originalname}`;
+
+            await r2.send(new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: fileName,
+                Body: questionImageFile.buffer,
+                ContentType: questionImageFile.mimetype
+            }));
+
+            questionImageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+
+        }
+
+        // tạo question
+        const newQuestion = await Question.create({
+            lectureId: lectureId,
+            content: question,
+            type,
+            image: questionImageUrl
+        });
+
+        const createdOptions = [];
+        const options = req.body.options;
+        for (let i = 0; i < options.length; i++) {
+
+            const opt = options[i];
+
+            if (!opt || !opt.text) continue;
+
+            const imageFile = req.files.find(
+                f => f.fieldname === `options[${i}][image]`
+            );
+
+            let imageUrl = null;
+
+            if (imageFile) {
+
+                const fileName = `options/${Date.now()}-${imageFile.originalname}`;
+
+                await r2.send(new PutObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: fileName,
+                    Body: imageFile.buffer,
+                    ContentType: imageFile.mimetype
+                }));
+
+                imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+
+            }
+
+            const option = await Option.create({
+                questionId: newQuestion._id,
+                content: opt.text,
+                image: imageUrl,
+                isCorrect: Number(correctAnswer) === i
+            });
+
+            createdOptions.push(option);
+
+        }
+
+        return res.json({
+            message: "Create question success",
+            question: newQuestion,
+            options: createdOptions
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Create question failed",
+            error: error.message
+        });
+
+    }
+
+};
+const getQuestionDetailById = async (req, res) => {
+
+    try {
+
+        const { questionId } = req.params;
+
+        // tìm question
+        const question = await Question.findById(questionId);
+
+        if (!question) {
+            return res.status(404).json({
+                message: "Question not found"
+            });
+        }
+
+        // lấy options
+        const options = await Option.find({
+            questionId: question._id
+        });
+
+        return res.json({
+            question: {
+                _id: question._id,
+                content: question.content,
+                type: question.type,
+                image: question.image
+            },
+            options
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Get question failed",
+            error: error.message
+        });
+
+    }
+
+};
+
+
+const deleteQuestionById = async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+        const questionId = id
+        const question = await Question.findById(questionId);
+
+        if (!question) {
+            return res.status(500).json({
+                message: "Question not found"
+            });
+        }
+
+        // xoá ảnh question nếu có
+        if (question.image) {
+
+            const key = question.image.replace(
+                `${process.env.R2_PUBLIC_URL}/`,
+                ""
+            );
+
+            await r2.send(new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: key
+            }));
+
+        }
+
+        // lấy options
+        const options = await Option.find({
+            questionId
+        });
+
+        if (!options) {
+            return res.json({
+                message: "Delete question success",
+                status: true
+            });
+
+        }
+
+        // xoá ảnh option
+        for (const opt of options) {
+
+            if (opt.image) {
+
+                const key = opt.image.replace(
+                    `${process.env.R2_PUBLIC_URL}/`,
+                    ""
+                );
+
+                await r2.send(new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: key
+                }));
+
+            }
+
+        }
+
+        // xoá options
+        await Option.deleteMany({
+            questionId
+        });
+
+        // xoá question
+        await Question.findByIdAndDelete(questionId);
+
+        return res.json({
+            message: "Delete question success",
+            status: true
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Delete question failed",
+            error: error.message
+        });
+
+    }
+
+};
+
+const updateQuestionWithOptions = async (req, res) => {
+
+    try {
+
+        const { questionId } = req.params;
+        const { question, type, correctAnswer, oldImage } = req.body;
+        const options = req.body.options || [];
+        // kiểm tra đáp án đúng
+        let correctCount = 0;
+
+        if (type === "single") {
+
+            correctCount = options.filter((_, index) =>
+                Number(correctAnswer) === index
+            ).length;
+
+        }
+
+        if (type === "multiple") {
+
+            correctCount = options.filter(
+                opt => String(opt.isCorrect) === "true"
+            ).length;
+
+        }
+
+        if (correctCount === 0) {
+
+            return res.status(500).json({
+                message: "Bạn chưa chọn đáp án đúng"
+            });
+
+        }
+
+        if (type === "single" && correctCount > 1) {
+
+            return res.status(500).json({
+                message: "Câu hỏi single chỉ được có 1 đáp án đúng"
+            });
+
+        }
+        // kiểm  tra question
+        const existingQuestion = await Question.findById(questionId);
+        // kiểm tra tồn question tồn tại
+        if (!existingQuestion) {
+            return res.status(500).json({
+                message: "Question not found"
+            });
+        }
+
+        existingQuestion.content = question;
+        existingQuestion.type = type;
+
+        // Kiểm tra hình ảnh 
+        let questionImageUrl = null;
+
+        // tìm file questionImage
+        const questionImageFile = req.files.find(
+            f => f.fieldname === "questionImage"
+        );
+
+        // Thêm ảnh mới
+        if (questionImageFile) {
+            // Xoá ảnh cũ
+            if (existingQuestion.image) {
+                const existingQuestionImage = existingQuestion.image.replace(
+                    `${process.env.R2_PUBLIC_URL}/`,
+                    ""
+                );
+                await r2.send(new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: existingQuestionImage
+                }));
+
+            }
+
+            const fileName = `images/${Date.now()}-${questionImageFile.originalname}`;
+            await r2.send(new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: fileName,
+                Body: questionImageFile.buffer,
+                ContentType: questionImageFile.mimetype
+            }));
+            questionImageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            existingQuestion.image = questionImageUrl;
+        }
+        else {
+
+            if (oldImage === 'null') {
+                // Xoá ảnh cũ
+                if (existingQuestion.image) {
+                    const existingQuestionImage = existingQuestion.image.replace(
+                        `${process.env.R2_PUBLIC_URL}/`,
+                        ""
+                    );
+                    await r2.send(new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: existingQuestionImage
+                    }));
+                }
+                existingQuestion.image = null;
+            } else {
+                existingQuestion.image = oldImage;
+            }
+        }
+        await existingQuestion.save();
+        //############################
+
+
+        // lấy option cũ
+        const oldOptions = await Option.find({ questionId });
+        const optionsNoId = options
+            .map((item, index) => ({ ...item, index }))
+            .filter(item => !item._id);
+
+        for (const item of optionsNoId) {
+            const optionImageFile = req.files.find(
+                f => f.fieldname === `options[${item.index}][newImage]`
+            );
+            let imageUrl = null;
+            if (optionImageFile) {
+                const fileName = `images/${Date.now()}-${optionImageFile.originalname}`;
+                await r2.send(new PutObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: fileName,
+                    Body: optionImageFile.buffer,
+                    ContentType: optionImageFile.mimetype
+                }));
+                imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            }
+            let isCorrect = false;
+
+            if (type === "single") {
+                isCorrect = Number(correctAnswer) === item.index;
+            }
+
+            if (type === "multiple") {
+                isCorrect = String(item.isCorrect) === "true";
+            }
+
+            const option = await Option.create({
+                questionId,
+                content: item.content,
+                image: imageUrl,
+                isCorrect: isCorrect
+            });
+        }
+
+        for (const opt of oldOptions) {
+            const index = options.findIndex(item => item?._id?.toString() === opt?._id?.toString());
+            if (index !== -1) {
+
+                let isCorrect = false;
+
+                if (type === "single") {
+                    isCorrect = Number(correctAnswer) === index;
+                }
+
+                if (type === "multiple") {
+                    isCorrect = String(options[index].isCorrect) === "true";
+                }
+
+                opt.isCorrect = isCorrect
+                opt.content = options[index].content
+                const optionImageFileNew = req.files.find(
+                    f => f.fieldname === `options[${index}][newImage]`
+                );
+                let imageUrlNew = null;
+                if (optionImageFileNew) {
+                    if (opt?.image) {
+                        const key = opt.image.replace(
+                            `${process.env.R2_PUBLIC_URL}/`,
+                            ""
+                        );
+                        await r2.send(new DeleteObjectCommand({
+                            Bucket: process.env.R2_BUCKET_NAME,
+                            Key: key
+                        }));
+                    }
+                    const fileName = `images/${Date.now()}-${optionImageFileNew.originalname}`;
+                    await r2.send(new PutObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: fileName,
+                        Body: optionImageFileNew.buffer,
+                        ContentType: optionImageFileNew.mimetype
+                    }));
+                    imageUrlNew = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+                    opt.image = imageUrlNew
+                }
+                await opt.save();
+            } else {
+                if (opt?.image) {
+                    const key = opt.image.replace(
+                        `${process.env.R2_PUBLIC_URL}/`,
+                        ""
+                    );
+                    await r2.send(new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: key
+                    }));
+                }
+                await Option.findByIdAndDelete(opt._id);
+            }
+        }
+        return res.json({
+            message: "Update question success",
+            status: "ok"
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Update question failed",
+            error: error.message
+        });
+
+    }
+
+};
 module.exports = {
-  createQuestion,
-  updateQuestion,
-  getQuestions,
-  getQuestionDetail,
-  deleteQuestion
+    createQuestion,
+    updateQuestion,
+    getQuestions,
+    getQuestionDetail,
+    deleteQuestion,
+    createQuestionWithOptions,
+    getQuestionDetailById,
+    deleteQuestionById,
+    updateQuestionWithOptions
 };

@@ -6,7 +6,7 @@ const auth = require('../middleware/auth');
 const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture} = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
 const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
-const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion } = require('../controllers/questionController');
+const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion, createQuestionWithOptions, getQuestionDetailById, deleteQuestionById, updateQuestionWithOptions } = require('../controllers/questionController');
 const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
@@ -76,6 +76,19 @@ routerAPI.put(
 routerAPI.get("/questions", getQuestions);
 routerAPI.get("/questions/:id", getQuestionDetail);
 routerAPI.delete("/questions/:id", deleteQuestion);
+
+routerAPI.post(
+  "/questions/options/:lectureId",
+  upload.any(),
+  createQuestionWithOptions
+);
+routerAPI.get("/question/:questionId", getQuestionDetailById);
+routerAPI.delete("/question/:id", deleteQuestionById);
+routerAPI.put(
+  "/question/:questionId",
+  upload.any(),
+  updateQuestionWithOptions
+);
 
 // +++++++++ OPTIONS ++++++++++++++
 routerAPI.post(
