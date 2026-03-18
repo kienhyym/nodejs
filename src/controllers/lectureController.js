@@ -138,7 +138,7 @@ const getLectureDetail = async (req, res) => {
     try {
 
         const lectureId = req.params.id;
-
+        const lectures = await Lecture.find().sort({ createdAt: -1 });
         const lecture = await Lecture.findById(lectureId);
 
         if (!lecture) {
@@ -155,14 +155,12 @@ const getLectureDetail = async (req, res) => {
             message: "Get lecture detail success",
             data: {
                 lecture,
-                videos
+                videos,
+                lectures
             }
         });
 
     } catch (error) {
-
-        console.error(error);
-
         res.status(500).json({
             message: "Get lecture detail failed",
             error: error.message
