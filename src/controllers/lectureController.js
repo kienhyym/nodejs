@@ -392,7 +392,7 @@ const getQuestionsByLecture = async (req, res) => {
     try {
 
         const lectureId = req.params.lectureId;
-
+         const lecture = await Lecture.findById(lectureId);
         const questions = await Question.find({
             lectureId
         }).sort({ createdAt: 1 });
@@ -417,6 +417,7 @@ const getQuestionsByLecture = async (req, res) => {
 
         res.json({
             lectureId,
+            lectureTitle:lecture?.title,
             totalQuestion: result.length,
             questions: result
         });
