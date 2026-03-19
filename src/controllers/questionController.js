@@ -318,18 +318,17 @@ const createQuestionWithOptions = async (req, res) => {
             let isCorrect = false;
 
             if (type === "single") {
-                isCorrect = Number(correctAnswer) === item.index;
+                isCorrect = Number(correctAnswer) === index;
             }
 
             if (type === "multiple") {
                 isCorrect = String(item.isCorrect) === "true";
             }
-
             const option = await Option.create({
                 questionId: newQuestion._id,
                 content: item.text,
                 image: imageUrl,
-                isCorrect: isCorrect
+                isCorrect
             });
             createdOptions.push(option);
         }
@@ -647,13 +646,13 @@ const updateQuestionWithOptions = async (req, res) => {
                 opt.content = options[index].content
                 if (opt.image && !options[index]?.oldImage) {
                     const key = opt.image.replace(
-                            `${process.env.R2_PUBLIC_URL}/`,
-                            ""
-                        );
-                        await r2.send(new DeleteObjectCommand({
-                            Bucket: process.env.R2_BUCKET_NAME,
-                            Key: key
-                        }));
+                        `${process.env.R2_PUBLIC_URL}/`,
+                        ""
+                    );
+                    await r2.send(new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: key
+                    }));
                     opt.image = null
                 }
 
