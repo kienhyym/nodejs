@@ -2,6 +2,9 @@ const Question = require("../models/question");
 const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const r2 = require("../config/cloudR2");
 const Option = require("../models/option");
+const Chapter = require("../models/chapter");
+const Lecture = require("../models/lecture");
+
 const createQuestion = async (req, res) => {
 
     try {
@@ -324,6 +327,7 @@ const createQuestionWithOptions = async (req, res) => {
             if (type === "multiple") {
                 isCorrect = String(item.isCorrect) === "true";
             }
+
             const option = await Option.create({
                 questionId: newQuestion._id,
                 content: item.text,
@@ -713,6 +717,35 @@ const updateQuestionWithOptions = async (req, res) => {
     }
 
 };
+const getAllQuestion = async (req, res) => {
+
+    try {
+        const chapters = await Chapter.find()
+        for (const chapter of chapters) {
+            const lecture = await Lecture.find()
+        }
+        const questions = await Question.find()
+            .populate("examId", "title")
+            .sort({ createdAt: -1 });
+
+        res.json({
+            message: "Get questions success",
+            data: questions
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            message: "Get questions failed",
+            error: error.message
+        });
+
+    }
+
+};
+
 module.exports = {
     createQuestion,
     updateQuestion,
@@ -722,5 +755,6 @@ module.exports = {
     createQuestionWithOptions,
     getQuestionDetailById,
     deleteQuestionById,
-    updateQuestionWithOptions
+    updateQuestionWithOptions,
+    getAllQuestion
 };

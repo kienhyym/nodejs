@@ -6,6 +6,7 @@ const Video = require("../models/video");
 const Exam = require("../models/exam");
 const Question = require("../models/question");
 const Option = require("../models/option");
+const chapter = require("../models/chapter");
 
 const createLecture = async (req, res) => {
 
@@ -98,27 +99,30 @@ const createLecture = async (req, res) => {
 const getLectures = async (req, res) => {
 
     try {
+        const chapters = await chapter.find();
+        
+        const resx = []
+        for (const chapter of chapters) {
+            const lectures = await Lecture.find({chapterId:chapter._id}).sort({ createdAt: -1 });
+            const result = [];
+            for (const lecture of lectures) {
+                const videos = await Video.find({
+                    lectureId: lecture._id
+                });
 
-        const lectures = await Lecture.find().sort({ createdAt: -1 });
+                result.push({
+                    ...lecture.toObject(),
+                    videos
+                });
 
-        const result = [];
-
-        for (const lecture of lectures) {
-
-            const videos = await Video.find({
-                lectureId: lecture._id
-            });
-
-            result.push({
-                ...lecture.toObject(),
-                videos
-            });
-
+            }
+            const obj = chapter.toObject();
+            obj.lectures = result
+            resx.push(obj)
         }
-
         return res.json({
             message: "Get lectures success",
-            data: result
+            data: resx
         });
 
     } catch (error) {
@@ -390,7 +394,7 @@ const getQuestionsByLecture = async (req, res) => {
     try {
 
         const lectureId = req.params.lectureId;
-         const lecture = await Lecture.findById(lectureId);
+        const lecture = await Lecture.findById(lectureId);
         const questions = await Question.find({
             lectureId
         }).sort({ createdAt: 1 });
@@ -415,7 +419,7 @@ const getQuestionsByLecture = async (req, res) => {
 
         res.json({
             lectureId,
-            lectureTitle:lecture?.title,
+            lectureTitle: lecture?.title,
             totalQuestion: result.length,
             questions: result
         });

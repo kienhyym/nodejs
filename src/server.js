@@ -5,11 +5,13 @@ const apiRoutes = require('./routes/api');
 const connection = require('./config/database');
 const { getHomepage } = require('./controllers/homeController');
 const cors = require('cors');
+// const delay = require('./middleware/delay');
 const app = express();
 const port = process.env.PORT || 8888;
 
 //config corssd
 app.use(cors());
+// app.use(delay);
 
 //config req.body
 app.use(express.json()) // for json

@@ -3,7 +3,7 @@ const { route } = require('express/lib/application');
 const router = require('express/lib/router');
 const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers/userController');
 const auth = require('../middleware/auth');
-const { createLecture, getLectures, getLectureDetail,updateLecture ,deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture} = require("../controllers/lectureController");
+const { createLecture, getLectures, getLectureDetail, updateLecture, deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture } = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
 const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion, createQuestionWithOptions, getQuestionDetailById, deleteQuestionById, updateQuestionWithOptions } = require('../controllers/questionController');
@@ -12,19 +12,20 @@ const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } 
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
 const { updateTitleVideo } = require('../controllers/videoController');
 const { createAchievements, getAchievements } = require('../controllers/achievementsController');
+const { createChapter, updateChapter, getChapters, deleteChapter, getChapter, getOpenChapters } = require('../controllers/chapterController');
 
 const routerAPI = express.Router();
 
 // routerAPI.all('*', auth)
-routerAPI.get('/',  (req, res) => {
-    return res.status(200).json({ message: 'Hello World API' });
+routerAPI.get('/', (req, res) => {
+  return res.status(200).json({ message: 'Hello World API' });
 })
 
 routerAPI.post('/register', CreateUser);
 
 routerAPI.post('/login', handleLogin);
 routerAPI.get('/user', getUser);
-routerAPI.get('/account',auth, getAccount);
+routerAPI.get('/account', auth, getAccount);
 
 routerAPI.post(
   "/lecture",
@@ -167,5 +168,17 @@ routerAPI.put("/video/:id", updateTitleVideo);
 // +++++++++ ACHIEVEMENTS ++++++++++++++
 routerAPI.post('/achievements/:lectureId', createAchievements);
 routerAPI.get("/achievements", getAchievements);
+
+
+// +++++++++ EXTEND ++++++++++++++
+
+routerAPI.post("/chapter", createChapter);
+routerAPI.put("/chapter/:id", updateChapter);
+routerAPI.get("/chapters", getChapters);
+routerAPI.get("/chapter/:id", getChapter);
+routerAPI.delete("/chapter/:id", deleteChapter);
+routerAPI.get("/chapters/open", getOpenChapters);
+
+
 
 module.exports = routerAPI; //export default
