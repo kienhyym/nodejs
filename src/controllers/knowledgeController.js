@@ -6,7 +6,7 @@ const Knowledge = require("../models/knowledge");
 const createKnowledge = async (req, res) => {
     try {
 
-        const { title, link } = req.body;
+        const { title } = req.body;
         if (req.file) {
              const file = req.file; 
             const fileName = `images/${Date.now()}-${file.originalname}`;
@@ -24,7 +24,6 @@ const createKnowledge = async (req, res) => {
             // tạo knowledge
             const knowledge = await Knowledge.create({
                 title,
-                link,
                 imageUrl,
                 fileName
             });
@@ -95,7 +94,7 @@ const updateKnowledge = async (req, res) => {
     try {
 
         const knowledgeId = req.params.id;
-        const { title, link } = req.body;
+        const { title } = req.body;
       // 4️⃣ upload video mới
         const knowledge = await Knowledge.findById(knowledgeId);
 
@@ -109,11 +108,6 @@ const updateKnowledge = async (req, res) => {
         if (title) {
             knowledge.title = title;
         }
-        if (link) {
-            knowledge.link = link;
-
-        }
-
           // xoá file trên R2
 
         const command = new DeleteObjectCommand({

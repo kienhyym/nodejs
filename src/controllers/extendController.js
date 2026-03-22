@@ -31,8 +31,12 @@ const createExtend = async (req, res) => {
                 extend,
             });
         } else {
-            res.status(500).json({
-                message: "Create extend failed"
+            const extend = await Extend.create({
+                title,
+                link,
+            });
+            return res.json({
+                extend,
             });
         }
     } catch (error) {
@@ -113,38 +117,38 @@ const updateExtend = async (req, res) => {
 
         }
 
-          // xoá file trên R2
+        // xoá file trên R2
 
-        const command = new DeleteObjectCommand({
-            Bucket: process.env.R2_BUCKET_NAME,
-            Key: extend.fileName
-        });
+        // const command = new DeleteObjectCommand({
+        //     Bucket: process.env.R2_BUCKET_NAME,
+        //     Key: extend.fileName
+        // });
 
-        await r2.send(command);
+        // await r2.send(command);
 
-        
+
         // 4️⃣ upload video mới
 
-        if (req.files && req.files?.videos) {
-            const file = req.files.videos[0]
+        // if (req.files && req.files?.videos) {
+        //     const file = req.files.videos[0]
 
-            const fileName = `videos/${Date.now()}-${file.originalname}`;
+        //     const fileName = `videos/${Date.now()}-${file.originalname}`;
 
-            const uploadCommand = new PutObjectCommand({
-                Bucket: process.env.R2_BUCKET_NAME,
-                Key: fileName,
-                Body: file.buffer,
-                ContentType: file.mimetype
-            });
+        //     const uploadCommand = new PutObjectCommand({
+        //         Bucket: process.env.R2_BUCKET_NAME,
+        //         Key: fileName,
+        //         Body: file.buffer,
+        //         ContentType: file.mimetype
+        //     });
 
-            await r2.send(uploadCommand);
+        //     await r2.send(uploadCommand);
 
-            const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+        //     const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
 
-            extend.videoUrl = videoUrl;
-            extend.fileName = fileName;
+        //     extend.videoUrl = videoUrl;
+        //     extend.fileName = fileName;
 
-        }
+        // }
         await extend.save();
         return res.json({
             message: "Extend updated",
@@ -178,12 +182,12 @@ const deleteExtend = async (req, res) => {
 
         // xoá file trên R2
 
-        const command = new DeleteObjectCommand({
-            Bucket: process.env.R2_BUCKET_NAME,
-            Key: extend.fileName
-        });
+        // const command = new DeleteObjectCommand({
+        //     Bucket: process.env.R2_BUCKET_NAME,
+        //     Key: extend.fileName
+        // });
 
-        await r2.send(command);
+        // await r2.send(command);
 
 
         // xoá extend
