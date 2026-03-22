@@ -28,7 +28,7 @@ routerAPI.get('/user', getUser);
 routerAPI.get('/account', auth, getAccount);
 
 routerAPI.post(
-  "/lecture",
+  "/lecture/:id",
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
     { name: "videos", maxCount: 10 }

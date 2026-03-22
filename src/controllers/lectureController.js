@@ -9,10 +9,9 @@ const Option = require("../models/option");
 const chapter = require("../models/chapter");
 
 const createLecture = async (req, res) => {
-
     try {
-
-        const { title } = req.body;
+         const chapterId = req.params.id;
+        const { title ,status} = req.body;
 
         let thumbnailUrl = null;
 
@@ -40,7 +39,9 @@ const createLecture = async (req, res) => {
         // tạo lecture
         const lecture = await Lecture.create({
             title,
-            thumbnail: thumbnailUrl
+            thumbnail: thumbnailUrl,
+            status,
+            chapterId
         });
 
         const videos = [];
@@ -100,10 +101,10 @@ const getLectures = async (req, res) => {
 
     try {
         const chapters = await chapter.find();
-        
+
         const resx = []
         for (const chapter of chapters) {
-            const lectures = await Lecture.find({chapterId:chapter._id}).sort({ createdAt: -1 });
+            const lectures = await Lecture.find({ chapterId: chapter._id }).sort({ createdAt: -1 });
             const result = [];
             for (const lecture of lectures) {
                 const videos = await Video.find({
@@ -178,7 +179,7 @@ const updateLecture = async (req, res) => {
     try {
 
         const lectureId = req.params.id;
-        const { title, deletedVideos } = req.body;
+        const { title, deletedVideos, status } = req.body;
 
         const lecture = await Lecture.findById(lectureId);
 
@@ -191,6 +192,10 @@ const updateLecture = async (req, res) => {
         // 1️⃣ update title
         if (title) {
             lecture.title = title;
+        }
+        if (status) {
+            lecture.status = status;
+
         }
 
         // 2️⃣ upload thumbnail mới

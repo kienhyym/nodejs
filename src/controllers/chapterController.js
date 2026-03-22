@@ -5,7 +5,7 @@ const createChapter = async (req, res) => {
 
   try {
 
-    const { title, name } = req.body;
+    const { title, name,status } = req.body;
 
     if (!title) {
       return res.status(500).json({
@@ -16,6 +16,7 @@ const createChapter = async (req, res) => {
     const chapter = await Chapter.create({
       title,
       name,
+      status
     });
 
     res.json({
