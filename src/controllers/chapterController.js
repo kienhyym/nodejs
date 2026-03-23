@@ -146,32 +146,6 @@ const deleteChapter = async (req, res) => {
 
 };
 
-const getOpenChapters = async (req, res) => {
-  try {
-    const chapters = await Chapter.find({ status: true })
-    if(!chapters){
-      return res.json({
-      data: []
-    });
-    }
-    const resx = []
-    for (const chapter of chapters) {
-      const lectures = await Lecture.find({ chapterId: chapter._id }).sort({ createdAt: -1 });
-      const obj = chapter.toObject();
-      obj.lectures = lectures
-      resx.push(obj)
-    }
-    return res.json({
-      data: resx
-    });
-
-  } catch (error) {
-    res.status(500).json({
-      message: "Get chapters failed"
-    });
-
-  }
-};
 
 module.exports = {
   createChapter,
@@ -179,6 +153,4 @@ module.exports = {
   getChapters,
   getChapter,
   deleteChapter,
-  //client
-  getOpenChapters
 };

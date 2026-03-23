@@ -12,7 +12,8 @@ const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } 
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
 const { updateTitleVideo } = require('../controllers/videoController');
 const { createAchievements, getAchievements } = require('../controllers/achievementsController');
-const { createChapter, updateChapter, getChapters, deleteChapter, getChapter, getOpenChapters } = require('../controllers/chapterController');
+const { createChapter, updateChapter, getChapters, deleteChapter, getChapter } = require('../controllers/chapterController');
+const { getOpenChapters, getLectureDetailAndOpenlectures } = require('../controllers/frontEndController');
 
 const routerAPI = express.Router();
 
@@ -178,6 +179,7 @@ routerAPI.get("/chapters", getChapters);
 routerAPI.get("/chapter/:id", getChapter);
 routerAPI.delete("/chapter/:id", deleteChapter);
 routerAPI.get("/chapters/open", getOpenChapters);
+routerAPI.get("/lecture/open/lectures/:id", getLectureDetailAndOpenlectures);
 
 
 
