@@ -12,7 +12,7 @@ const getOpenChapters = async (req, res) => {
         }
         const resx = []
         for (const chapter of chapters) {
-            const lectures = await Lecture.find({ chapterId: chapter._id }).sort({ createdAt: -1 });
+            const lectures = await Lecture.find({ chapterId: chapter._id,status: true  }).sort({ createdAt: -1 });
             const obj = chapter.toObject();
             obj.lectures = lectures
             resx.push(obj)
