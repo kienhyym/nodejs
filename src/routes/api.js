@@ -168,7 +168,7 @@ routerAPI.delete("/lectures/:lectureId/questions", deleteQuestionsByLecture);
 routerAPI.put("/video/:id", updateTitleVideo);
 
 // +++++++++ ACHIEVEMENTS ++++++++++++++
-routerAPI.post('/achievements/:lectureId', createAchievements);
+routerAPI.post('/achievements/:examId', createAchievements);
 routerAPI.get("/achievements", getAchievements);
 
 

@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
 
 const achievementsSchema = new mongoose.Schema({
-  lectureId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Lecture"
-  },
+ 
+   examId: {
+     type: mongoose.Schema.Types.ObjectId,
+     ref: "exam"
+   },
+ 
   name: String,
 
   class: String,

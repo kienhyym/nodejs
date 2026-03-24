@@ -1,11 +1,13 @@
 const Achievements = require("../models/achievements");
 const Lecture = require("../models/lecture");
+const Exam = require("../models/exam");
 
 
 const createAchievements = async (req, res) => {
 
   try {
-    const { lectureId } = req.params;
+    const { examId } = req.params;
+   
     const { userName, userClass, userResult } = req.body;
 
     if (!userName || !userClass) {
@@ -15,7 +17,7 @@ const createAchievements = async (req, res) => {
     }
 
     const achievements = await Achievements.create({
-      lectureId,
+      examId,
       name: userName,
       class: userClass,
       result: userResult,
@@ -44,11 +46,17 @@ const getAchievements = async (req, res) => {
     const result = [];
 
     for (const achievement of achievements) {
+
+
+      const exam = await Exam.findById({
+        _id: achievement.examId
+      });
       const lecture = await Lecture.findById({
-        _id: achievement.lectureId
+        _id: exam.lectureId
       });
       result.push({
         ...achievement.toObject(),
+        exam,
         lecture
       });
     }
