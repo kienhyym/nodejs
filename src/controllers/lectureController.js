@@ -429,6 +429,8 @@ const getQuestionsByLecture = async (req, res) => {
             examId,
             lectureTitle: lecture?.title,
             totalQuestion: result.length,
+            examTime:exam.timeLimit,
+            examTitle:exam.title,
             questions: result
         });
 
