@@ -7,11 +7,17 @@ const examSchema = new mongoose.Schema({
     ref: "Lecture"
   },
 
-  title: String,
+  title: String,   //ví dụ: Đề thi 1, Đề thi 2, đề ôn tập
 
   timeLimit: Number,
 
   totalQuestion: Number,
+
+  type: {
+    type: String,
+    enum: ["experiment", "exam"],
+    default: "experiment"
+  },
 
   status: {
     type: Boolean,

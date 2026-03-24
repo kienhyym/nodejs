@@ -10,8 +10,8 @@ const chapter = require("../models/chapter");
 
 const createLecture = async (req, res) => {
     try {
-         const chapterId = req.params.id;
-        const { title ,status} = req.body;
+        const chapterId = req.params.id;
+        const { title, status } = req.body;
 
         let thumbnailUrl = null;
 
@@ -398,10 +398,13 @@ const getQuestionsByLecture = async (req, res) => {
 
     try {
 
-        const lectureId = req.params.lectureId;
-        const lecture = await Lecture.findById(lectureId);
+        const examId = req.params.lectureId;
+
+        const exam = await Exam.findById(examId);
+        const lecture = await Lecture.findOne({ _id: exam.lectureId });
+
         const questions = await Question.find({
-            lectureId
+            examId
         }).sort({ createdAt: 1 });
 
         const result = [];
@@ -423,7 +426,7 @@ const getQuestionsByLecture = async (req, res) => {
         }
 
         res.json({
-            lectureId,
+            examId,
             lectureTitle: lecture?.title,
             totalQuestion: result.length,
             questions: result

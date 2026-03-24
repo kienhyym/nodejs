@@ -1,30 +1,60 @@
 const Chapter = require("../models/chapter");
 const Lecture = require("../models/lecture");
 const Video = require("../models/video");
+const Exam = require("../models/exam");
 
 const getOpenChapters = async (req, res) => {
     try {
-        const chapters = await Chapter.find({ status: true })
-        if (!chapters) {
-            return res.json({
-                data: []
-            });
-        }
-        const resx = []
+
+        const chapters = await Chapter.find({ status: true });
+
+        const resx = [];
+
         for (const chapter of chapters) {
-            const lectures = await Lecture.find({ chapterId: chapter._id,status: true  }).sort({ createdAt: -1 });
+
+            const lectures = await Lecture.find({
+                chapterId: chapter._id,
+                status: true
+            }).sort({ createdAt: -1 });
+
+            const lectureWithExam = [];
+
+            for (const lecture of lectures) {
+
+                const experiment = await Exam.find({
+                    lectureId: lecture._id,
+                    status: true,
+                    type: "experiment"
+                });
+
+                const exam = await Exam.find({
+                    lectureId: lecture._id,
+                    status: true,
+                    type: "exam"
+                });
+
+                const objLecture = lecture.toObject();
+                objLecture.experiment = experiment;
+                objLecture.exam = exam;
+                lectureWithExam.push(objLecture);
+            }
+
             const obj = chapter.toObject();
-            obj.lectures = lectures
-            resx.push(obj)
+            obj.lectures = lectureWithExam;
+
+            resx.push(obj);
         }
+
         return res.json({
             data: resx
         });
 
     } catch (error) {
+
         res.status(500).json({
             message: "Get chapters failed"
         });
+
     }
 };
 
@@ -33,7 +63,7 @@ const getOpenChapters = async (req, res) => {
 const getLectureDetailAndOpenlectures = async (req, res) => {
     try {
         const lectureId = req.params.id;
-        const lecture = await Lecture.findById(lectureId); 
+        const lecture = await Lecture.findById(lectureId);
 
         if (!lecture) {
             return res.status(404).json({
@@ -54,7 +84,7 @@ const getLectureDetailAndOpenlectures = async (req, res) => {
         }
         const chapterArr = []
         for (const chapter of chapters) {
-            const lectures = await Lecture.find({ chapterId: chapter._id,status:true }).sort({ createdAt: -1 });
+            const lectures = await Lecture.find({ chapterId: chapter._id, status: true }).sort({ createdAt: -1 });
             const obj = chapter.toObject();
             obj.lectures = lectures
             chapterArr.push(obj)
@@ -64,7 +94,7 @@ const getLectureDetailAndOpenlectures = async (req, res) => {
             data: {
                 lecture,
                 videos,
-                lectures :chapterArr
+                lectures: chapterArr
             }
         });
 
@@ -74,7 +104,6 @@ const getLectureDetailAndOpenlectures = async (req, res) => {
         });
     }
 };
-
 
 
 module.exports = {

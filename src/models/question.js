@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const questionSchema = new mongoose.Schema({
 
-  lectureId: {
+  examId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Lecture"
+    ref: "exam"
   },
 
   content: String,

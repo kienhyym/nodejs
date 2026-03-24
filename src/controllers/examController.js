@@ -6,10 +6,11 @@ const createExam = async (req, res) => {
 
   try {
 
-    const { lectureId, title, timeLimit, totalQuestion } = req.body;
+    const { lectureId, title, timeLimit, totalQuestion, type, status } = req.body;
+    console.log("🚀 ~ createExam ~ lectureId:", req.body)
 
     if (!lectureId || !title) {
-      return res.status(400).json({
+      return res.status(500).json({
         message: "lectureId and title are required"
       });
     }
@@ -18,7 +19,9 @@ const createExam = async (req, res) => {
       lectureId,
       title,
       timeLimit,
-      totalQuestion
+      totalQuestion,
+      type,
+      status
     });
 
     return res.json({
@@ -36,7 +39,6 @@ const createExam = async (req, res) => {
     });
 
   }
-
 };
 
 const updateExam = async (req, res) => {
@@ -45,7 +47,7 @@ const updateExam = async (req, res) => {
 
     const examId = req.params.id;
 
-    const { title, timeLimit, totalQuestion } = req.body;
+    const { title, timeLimit, totalQuestion, status, type } = req.body;
 
     const exam = await Exam.findById(examId);
 
@@ -57,9 +59,11 @@ const updateExam = async (req, res) => {
 
     if (title) exam.title = title;
 
-    if (timeLimit !== undefined) exam.timeLimit = timeLimit;
+    exam.timeLimit = timeLimit;
 
-    if (totalQuestion !== undefined) exam.totalQuestion = totalQuestion;
+    exam.totalQuestion = totalQuestion; 
+    exam.status = status;
+    if (type) exam.type = type;
 
     await exam.save();
 
@@ -78,16 +82,14 @@ const updateExam = async (req, res) => {
     });
 
   }
-
 };
 
 
 const getExams = async (req, res) => {
 
   try {
-
-    const exams = await Exam.find()
-      .populate("lectureId", "title")
+    const { lectureId } = req.params
+    const exams = await Exam.find({ lectureId })
       .sort({ createdAt: -1 });
 
     return res.json({
@@ -121,27 +123,8 @@ const getExamDetail = async (req, res) => {
         message: "Exam not found"
       });
     }
-
-    const questions = await Question.find({ examId });
-
-    const result = [];
-
-    for (const question of questions) {
-
-      const options = await Option.find({
-        questionId: question._id
-      });
-
-      result.push({
-        ...question.toObject(),
-        options
-      });
-
-    }
-
     return res.json({
-      exam,
-      questions: result
+      data: exam,
     });
 
   } catch (error) {
@@ -218,11 +201,16 @@ const toggleExamStatus = async (req, res) => {
 
 };
 
+
+
+
+
+
 module.exports = {
   createExam,
   updateExam,
   getExams,
   getExamDetail,
   deleteExam,
-  toggleExamStatus
+  toggleExamStatus,
 };

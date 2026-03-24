@@ -5,7 +5,7 @@ const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers
 const auth = require('../middleware/auth');
 const { createLecture, getLectures, getLectureDetail, updateLecture, deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture } = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
-const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
+const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus} = require('../controllers/examController');
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion, createQuestionWithOptions, getQuestionDetailById, deleteQuestionById, updateQuestionWithOptions } = require('../controllers/questionController');
 const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
@@ -57,12 +57,13 @@ routerAPI.get(
 
 
 // +++++++++ EXAMS ++++++++++++++
-routerAPI.post('/exams', createExam);
-routerAPI.put("/exams/:id", updateExam);
-routerAPI.get("/exams", getExams);
-routerAPI.get("/exams/:id", getExamDetail);
+routerAPI.post('/exam', createExam);
+routerAPI.put("/exam/:id", updateExam);
+routerAPI.get("/exams/:lectureId", getExams);
+routerAPI.get("/exam/:id", getExamDetail);
 routerAPI.delete("/exams/:id", deleteExam);
 routerAPI.patch("/exams/:id/status", toggleExamStatus);
+
 // +++++++++ QUESTIONS ++++++++++++++
 
 routerAPI.post(
@@ -180,7 +181,6 @@ routerAPI.get("/chapter/:id", getChapter);
 routerAPI.delete("/chapter/:id", deleteChapter);
 routerAPI.get("/chapters/open", getOpenChapters);
 routerAPI.get("/lecture/open/lectures/:id", getLectureDetailAndOpenlectures);
-
 
 
 module.exports = routerAPI; //export default
