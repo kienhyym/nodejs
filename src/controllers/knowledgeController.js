@@ -8,8 +8,13 @@ const createKnowledge = async (req, res) => {
 
         const { title } = req.body;
         if (req.file) {
-             const file = req.file; 
-            const fileName = `images/${Date.now()}-${file.originalname}`;
+            const file = req.file;
+            let fileName = ''
+            if (file.originalname.slice(-4) === ".pdf") {
+                fileName = `pdfs/${Date.now()}-${file.originalname}`;
+            } else {
+                fileName = `images/${Date.now()}-${file.originalname}`;
+            }
 
             const command = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -36,6 +41,7 @@ const createKnowledge = async (req, res) => {
             });
         }
     } catch (error) {
+        console.log("🚀 ~ createKnowledge ~   ss:", error)
         res.status(500).json({
             message: "Create knowledge failed"
         });
@@ -95,7 +101,7 @@ const updateKnowledge = async (req, res) => {
 
         const knowledgeId = req.params.id;
         const { title } = req.body;
-      // 4️⃣ upload video mới
+        // 4️⃣ upload video mới
         const knowledge = await Knowledge.findById(knowledgeId);
 
         if (!knowledge) {
@@ -108,7 +114,7 @@ const updateKnowledge = async (req, res) => {
         if (title) {
             knowledge.title = title;
         }
-          // xoá file trên R2
+        // xoá file trên R2
 
         const command = new DeleteObjectCommand({
             Bucket: process.env.R2_BUCKET_NAME,
@@ -117,11 +123,17 @@ const updateKnowledge = async (req, res) => {
 
         await r2.send(command);
 
-        
-        // 4️⃣ upload video mới
+
         if (req.files && req.files.image) {
-             const file = req.files.image[0]; 
-            const fileName = `images/${Date.now()}-${file.originalname}`;
+            const file = req.files.image[0];
+            let fileName = ''
+            if (file.originalname.slice(-4) === ".pdf") {
+                fileName = `pdfs/${Date.now()}-${file.originalname}`;
+            } 
+            
+            else {
+                fileName = `images/${Date.now()}-${file.originalname}`;
+            }
 
             const uploadCommand = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -195,6 +207,22 @@ const deleteKnowledge = async (req, res) => {
 
 };
 
+const getPDF = async (req, res) => {
+    try {
+        const knowledgeId = req.params.id;
+        const knowledge = await Knowledge.findById(knowledgeId);
+        const knowledgeUrl = knowledge?.imageUrl
+        const response = await fetch(knowledgeUrl);
+        const buffer = await response.arrayBuffer();
+        res.setHeader("Content-Type", "application/pdf");
+        res.send(Buffer.from(buffer));
+    } catch (err) {
+        console.error("PDF ERROR:", err);
+        res.status(500).send("Lỗi server");
+    }
+};
+
+
 
 module.exports = {
     createKnowledge,
@@ -202,4 +230,5 @@ module.exports = {
     getKnowledgeDetail,
     updateKnowledge,
     deleteKnowledge,
+    getPDF
 };

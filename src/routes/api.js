@@ -5,11 +5,11 @@ const { CreateUser, handleLogin, getUser, getAccount } = require('../controllers
 const auth = require('../middleware/auth');
 const { createLecture, getLectures, getLectureDetail, updateLecture, deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture } = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
-const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus} = require('../controllers/examController');
+const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
 const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion, createQuestionWithOptions, getQuestionDetailById, deleteQuestionById, updateQuestionWithOptions } = require('../controllers/questionController');
 const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
-const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge } = require('../controllers/knowledgeController');
+const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge, getPDF } = require('../controllers/knowledgeController');
 const { updateTitleVideo } = require('../controllers/videoController');
 const { createAchievements, getAchievements } = require('../controllers/achievementsController');
 const { createChapter, updateChapter, getChapters, deleteChapter, getChapter } = require('../controllers/chapterController');
@@ -182,5 +182,7 @@ routerAPI.delete("/chapter/:id", deleteChapter);
 routerAPI.get("/chapters/open", getOpenChapters);
 routerAPI.get("/lecture/open/lectures/:id", getLectureDetailAndOpenlectures);
 
+
+routerAPI.get("/pdf/:id", getPDF);
 
 module.exports = routerAPI; //export default
