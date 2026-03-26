@@ -141,9 +141,7 @@ routerAPI.post(
 
 routerAPI.put(
   "/knowledge/:id",
-  upload.fields([
-    { name: "image", maxCount: 1 }
-  ]),
+   upload.single("image"),
   updateKnowledge
 );
 routerAPI.get("/knowledge", getKnowledges);

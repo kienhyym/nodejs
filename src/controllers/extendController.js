@@ -116,7 +116,7 @@ const updateExtend = async (req, res) => {
         if (req.file) {
 
             // xoá file trên R2
-            if (image !== 'null') {
+            if (image !== 'null' && image !== 'undefined') {
                 const commandDelete = new DeleteObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
                     Key: extend.imageName
@@ -142,7 +142,7 @@ const updateExtend = async (req, res) => {
                 extend,
             });
         } else {
-            if (image === 'null') {
+            if (image === 'null' || image === 'undefined') {
                 if (extend.imageUrl) {
                     const command = new DeleteObjectCommand({
                         Bucket: process.env.R2_BUCKET_NAME,
