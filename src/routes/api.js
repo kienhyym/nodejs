@@ -118,16 +118,12 @@ routerAPI.delete("/options/:id", deleteOption);
 
 routerAPI.post(
   "/extend",
-  upload.fields([
-    { name: "videos", maxCount: 1 }
-  ]),
+   upload.single("image"),
   createExtend
 );
 routerAPI.put(
   "/extend/:id",
-  upload.fields([
-    { name: "videos", maxCount: 1 }
-  ]),
+  upload.single("image"),
   updateExtend
 );
 routerAPI.get("/extend", getExtends);

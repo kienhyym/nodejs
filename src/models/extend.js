@@ -6,9 +6,9 @@ const extendSchema = new mongoose.Schema({
 
   link: String,
 
-  videoUrl: String,
-  
-  fileName: String,
+  imageUrl: String,
+
+  imageName: String,
 
   createdAt: {
     type: Date,

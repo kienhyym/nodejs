@@ -5,27 +5,24 @@ const Extend = require("../models/extend");
 
 const createExtend = async (req, res) => {
     try {
-
         const { title, link } = req.body;
-        if (req.files.videos) {
-            const file = req.files.videos[0];
-            const fileName = `videos/${Date.now()}-${file.originalname}`;
+        if (req?.file) {
+            const file = req.file;
+            const fileName = `images/${Date.now()}-${file.originalname}`;
             const command = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
                 Key: fileName,
                 Body: file.buffer,
                 ContentType: file.mimetype
             });
-
             await r2.send(command);
-
-            const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            const imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
             // tạo extend
             const extend = await Extend.create({
                 title,
                 link,
-                videoUrl,
-                fileName
+                imageUrl,
+                imageName: fileName
             });
             return res.json({
                 extend,
@@ -98,7 +95,7 @@ const updateExtend = async (req, res) => {
     try {
 
         const extendId = req.params.id;
-        const { title, link } = req.body;
+        const { title, link, image } = req.body;
 
         const extend = await Extend.findById(extendId);
 
@@ -114,50 +111,56 @@ const updateExtend = async (req, res) => {
         }
         if (link) {
             extend.link = link;
-
         }
 
-        // xoá file trên R2
+        if (req.file) {
 
-        // const command = new DeleteObjectCommand({
-        //     Bucket: process.env.R2_BUCKET_NAME,
-        //     Key: extend.fileName
-        // });
+            // xoá file trên R2
+            if (image !== 'null') {
+                const commandDelete = new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: extend.imageName
+                });
+                await r2.send(commandDelete);
+            }
 
-        // await r2.send(command);
+            const file = req.file;
+            const fileName = `images/${Date.now()}-${file.originalname}`;
+            const command = new PutObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: fileName,
+                Body: file.buffer,
+                ContentType: file.mimetype
+            });
+            await r2.send(command);
+            const imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            // tạo extend
+            extend.imageUrl = imageUrl
+            extend.imageName = fileName
+            await extend.save();
+            return res.json({
+                extend,
+            });
+        } else {
+            if (image === 'null') {
+                if (extend.imageUrl) {
+                    const command = new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: extend.imageName
+                    });
+                    await r2.send(command);
+                }
 
+                extend.imageUrl = null
+                extend.imageName = null
+            }
 
-        // 4️⃣ upload video mới
-
-        // if (req.files && req.files?.videos) {
-        //     const file = req.files.videos[0]
-
-        //     const fileName = `videos/${Date.now()}-${file.originalname}`;
-
-        //     const uploadCommand = new PutObjectCommand({
-        //         Bucket: process.env.R2_BUCKET_NAME,
-        //         Key: fileName,
-        //         Body: file.buffer,
-        //         ContentType: file.mimetype
-        //     });
-
-        //     await r2.send(uploadCommand);
-
-        //     const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-
-        //     extend.videoUrl = videoUrl;
-        //     extend.fileName = fileName;
-
-        // }
-        await extend.save();
-        return res.json({
-            message: "Extend updated",
-            extend,
-        });
-
+            await extend.save();
+            return res.json({
+                extend,
+            });
+        }
     } catch (error) {
-        console.error(error);
-
         res.status(500).json({
             message: "Update extend failed",
             error: error.message
@@ -181,14 +184,13 @@ const deleteExtend = async (req, res) => {
         }
 
         // xoá file trên R2
-
-        // const command = new DeleteObjectCommand({
-        //     Bucket: process.env.R2_BUCKET_NAME,
-        //     Key: extend.fileName
-        // });
-
-        // await r2.send(command);
-
+        if (extend.imageName) {
+            const command = new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: extend.imageName
+            });
+            await r2.send(command);
+        }
 
         // xoá extend
         await Extend.findByIdAndDelete(extendId);
