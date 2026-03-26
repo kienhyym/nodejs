@@ -1,5 +1,12 @@
 const Chapter = require("../models/chapter");
 const Lecture = require("../models/lecture");
+const Exam = require("../models/exam");
+const Question = require("../models/question");
+const Option = require("../models/option");
+const Video = require("../models/video");
+
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const r2 = require("../config/cloudR2");
 
 const createChapter = async (req, res) => {
 
@@ -116,11 +123,13 @@ const getChapter = async (req, res) => {
   }
 
 };
+
+
 const deleteChapter = async (req, res) => {
 
   try {
 
-    const chapterId = req.params.id;
+    const { chapterId } = req.params;
 
     const chapter = await Chapter.findById(chapterId);
 
@@ -130,22 +139,123 @@ const deleteChapter = async (req, res) => {
       });
     }
 
+    // 1️⃣ Lấy lectures
+    const lectures = await Lecture.find({ chapterId });
+
+    for (const lecture of lectures) {
+
+      // 2️⃣ Xoá thumbnail lecture
+      if (lecture.thumbnail) {
+        const key = lecture.thumbnail.replace(
+          `${process.env.R2_PUBLIC_URL}/`,
+          ""
+        );
+
+        await r2.send(new DeleteObjectCommand({
+          Bucket: process.env.R2_BUCKET_NAME,
+          Key: key
+        }));
+      }
+
+      // 3️⃣ Xoá video
+      const videos = await Video.find({ lectureId: lecture._id });
+
+      for (const video of videos) {
+
+        if (video.videoUrl) {
+          const key = video.videoUrl.replace(
+            `${process.env.R2_PUBLIC_URL}/`,
+            ""
+          );
+
+          await r2.send(new DeleteObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: key
+          }));
+        }
+      }
+
+      await Video.deleteMany({ lectureId: lecture._id });
+
+      // 4️⃣ Xoá exam
+      const exams = await Exam.find({ lectureId: lecture._id });
+
+      for (const exam of exams) {
+
+        // 5️⃣ Xoá question
+        const questions = await Question.find({ examId: exam._id });
+
+        for (const question of questions) {
+
+          // xoá ảnh question
+          if (question.image) {
+            const key = question.image.replace(
+              `${process.env.R2_PUBLIC_URL}/`,
+              ""
+            );
+
+            await r2.send(new DeleteObjectCommand({
+              Bucket: process.env.R2_BUCKET_NAME,
+              Key: key
+            }));
+          }
+
+          // 6️⃣ xoá option
+          const options = await Option.find({ questionId: question._id });
+
+          for (const opt of options) {
+
+            if (opt.image) {
+              const key = opt.image.replace(
+                `${process.env.R2_PUBLIC_URL}/`,
+                ""
+              );
+
+              await r2.send(new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: key
+              }));
+            }
+
+          }
+
+          await Option.deleteMany({ questionId: question._id });
+
+        }
+
+        await Question.deleteMany({ examId: exam._id });
+
+      }
+
+      await Exam.deleteMany({ lectureId: lecture._id });
+
+    }
+
+    await Lecture.deleteMany({ chapterId });
+
+    // 7️⃣ xoá chapter
     await Chapter.findByIdAndDelete(chapterId);
 
-    res.json({
+    return res.json({
       message: "Delete chapter success"
     });
 
   } catch (error) {
 
+    console.error(error);
+
     res.status(500).json({
-      message: "Delete chapter failed"
+      message: "Delete chapter failed",
+      error: error.message
     });
 
   }
 
 };
 
+module.exports = {
+  deleteChapter
+};
 
 module.exports = {
   createChapter,

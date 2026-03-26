@@ -178,7 +178,7 @@ routerAPI.post("/chapter", createChapter);
 routerAPI.put("/chapter/:id", updateChapter);
 routerAPI.get("/chapters", getChapters);
 routerAPI.get("/chapter/:id", getChapter);
-routerAPI.delete("/chapter/:id", deleteChapter);
+routerAPI.delete("/chapter/:chapterId", deleteChapter);
 routerAPI.get("/chapters/open", getOpenChapters);
 routerAPI.get("/lecture/open/lectures/:id", getLectureDetailAndOpenlectures);
 
