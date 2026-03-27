@@ -8,6 +8,7 @@ const chapterSchema = new mongoose.Schema({
   },
 
   name: String,
+  
   status: {
     type: Boolean,
     default: true

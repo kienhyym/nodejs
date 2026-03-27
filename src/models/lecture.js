@@ -14,6 +14,8 @@ const lectureSchema = new mongoose.Schema({
     required: true
   },
   thumbnail: String,
+  thumbnailName: String,
+  
   description: String,
   createdAt: {
     type: Date,

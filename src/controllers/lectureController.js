@@ -14,15 +14,13 @@ const createLecture = async (req, res) => {
         const { title, status } = req.body;
 
         let thumbnailUrl = null;
+        let thumbnailName = null;
+
 
         // upload thumbnail
-        if (req.files.thumbnail) {
-
-
+        if (req.files?.thumbnail && req.files?.thumbnail.length > 0) {
             const file = req.files.thumbnail[0];
-
             const fileName = `images/${Date.now()}-${file.originalname}`;
-
             const command = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
                 Key: fileName,
@@ -33,56 +31,61 @@ const createLecture = async (req, res) => {
             await r2.send(command);
 
             thumbnailUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-
+            thumbnailName = fileName
         }
 
         // tạo lecture
         const lecture = await Lecture.create({
             title,
             thumbnail: thumbnailUrl,
+            thumbnailName,
             status,
             chapterId
         });
 
-        const videos = [];
+        if (req.files.videos && req.files.videos.length > 0) {
+            const videos = [];
 
-        // upload videos
-        if (req.files.videos) {
+            // upload videos
+            if (req.files.videos) {
 
-            for (const file of req.files.videos) {
-                const displayName = Buffer
-                    .from(file.originalname, "latin1")
-                    .toString("utf8").slice(0, -4);
+                for (const file of req.files.videos) {
+                    const displayName = Buffer
+                        .from(file.originalname, "latin1")
+                        .toString("utf8").slice(0, -4);
 
-                const fileName = `videos/${Date.now()}.mp4`;
+                    const fileName = `videos/${Date.now()}.mp4`;
 
-                const command = new PutObjectCommand({
-                    Bucket: process.env.R2_BUCKET_NAME,
-                    Key: fileName,
-                    Body: file.buffer,
-                    ContentType: file.mimetype
-                });
+                    const command = new PutObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: fileName,
+                        Body: file.buffer,
+                        ContentType: file.mimetype
+                    });
 
-                await r2.send(command);
+                    await r2.send(command);
 
-                const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+                    const videoUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
 
-                const video = await Video.create({
-                    lectureId: lecture._id,
-                    videoUrl,
-                    fileName,
-                    displayName
-                });
+                    const video = await Video.create({
+                        lectureId: lecture._id,
+                        videoUrl,
+                        fileName,
+                        displayName
+                    });
 
-                videos.push(video);
+                    videos.push(video);
+
+                }
 
             }
-
+            return res.json({
+                lecture,
+                videos
+            });
         }
-
         return res.json({
             lecture,
-            videos
         });
 
     } catch (error) {
@@ -179,8 +182,7 @@ const updateLecture = async (req, res) => {
     try {
 
         const lectureId = req.params.id;
-        const { title, deletedVideos, status } = req.body;
-
+        const { title, deletedVideos, status, thumbnail } = req.body;
         const lecture = await Lecture.findById(lectureId);
 
         if (!lecture) {
@@ -197,29 +199,47 @@ const updateLecture = async (req, res) => {
             lecture.status = status;
 
         }
+        const files = req?.files?.thumbnail
+        if (files && files.length > 0) {
+            // xoá file trên R2
+            if (thumbnail !== 'null' && thumbnail !== 'undefined') {
+                const commandDelete = new DeleteObjectCommand({
+                    Bucket: process.env.R2_BUCKET_NAME,
+                    Key: lecture.thumbnailName
+                });
+                await r2.send(commandDelete);
+            }
 
-        // 2️⃣ upload thumbnail mới
-        if (req.files?.thumbnail?.length > 0) {
-
-            const file = req.files.thumbnail[0];
-
+            const file = files[0];
             const fileName = `images/${Date.now()}-${file.originalname}`;
-
-            const uploadCommand = new PutObjectCommand({
+            const command = new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
                 Key: fileName,
                 Body: file.buffer,
                 ContentType: file.mimetype
             });
+            await r2.send(command);
+            const imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            // tạo lecture
+            lecture.thumbnail = imageUrl
+            lecture.thumbnailName = fileName
+            await lecture.save();
+        } else {
+            if (thumbnail === 'null' || thumbnail === 'undefined') {
+                if (lecture.thumbnail) {
+                    const command = new DeleteObjectCommand({
+                        Bucket: process.env.R2_BUCKET_NAME,
+                        Key: lecture.thumbnailName
+                    });
+                    await r2.send(command);
+                }
 
-            await r2.send(uploadCommand);
+                lecture.thumbnail = null
+                lecture.thumbnailName = null
+            }
 
-            const thumbnailUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-
-            lecture.thumbnail = thumbnailUrl;
+            await lecture.save();
         }
-
-        await lecture.save();
 
         // 3️⃣ xoá video
         if (deletedVideos?.length > 0) {
@@ -276,25 +296,14 @@ const updateLecture = async (req, res) => {
                 });
 
                 newVideos.push(video);
-
             }
-
         }
 
-        const videos = await Video.find({
-            lectureId
-        });
-
         return res.json({
-            message: "Lecture updated",
-            lecture,
-            videos
+            message: "Cập nhật thành công",
         });
 
     } catch (error) {
-
-        console.error(error);
-
         res.status(500).json({
             message: "Update lecture failed",
             error: error.message
@@ -429,8 +438,8 @@ const getQuestionsByLecture = async (req, res) => {
             examId,
             lectureTitle: lecture?.title,
             totalQuestion: result.length,
-            examTime:exam.timeLimit,
-            examTitle:exam.title,
+            examTime: exam.timeLimit,
+            examTitle: exam.title,
             questions: result
         });
 
@@ -462,7 +471,6 @@ const importQuestions = async (req, res) => {
         let createdQuestions = 0;
 
         for (const q of questions) {
-            console.log('q', q)
             const question = await Question.create({
                 lectureId,
                 content: q.content,
@@ -504,42 +512,147 @@ const importQuestions = async (req, res) => {
 
 const deleteQuestionsByLecture = async (req, res) => {
 
-    try {
+  try {
 
-        const lectureId = req.params.lectureId;
+    const { lectureId } = req.params;
 
-        // tìm tất cả question của lecture
-        const questions = await Question.find({
-            lectureId
+    const lecture = await Lecture.findById(lectureId);
+
+    if (!lecture) {
+      return res.status(404).json({
+        message: "Lecture not found"
+      });
+    }
+
+    // ======================
+    // 1. XOÁ THUMBNAIL
+    // ======================
+    if (lecture.thumbnail) {
+
+      const key = lecture.thumbnail.replace(
+        `${process.env.R2_PUBLIC_URL}/`,
+        ""
+      );
+
+      await r2.send(new DeleteObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME,
+        Key: key
+      }));
+    }
+
+    // ======================
+    // 2. XOÁ VIDEO
+    // ======================
+    const videos = await Video.find({ lectureId });
+
+    await Promise.all(
+      videos.map(async (video) => {
+
+        if (video.videoUrl) {
+
+          const key = video.videoUrl.replace(
+            `${process.env.R2_PUBLIC_URL}/`,
+            ""
+          );
+
+          await r2.send(new DeleteObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: key
+          }));
+        }
+
+      })
+    );
+
+    await Video.deleteMany({ lectureId });
+
+    // ======================
+    // 3. XOÁ EXAM
+    // ======================
+    const exams = await Exam.find({ lectureId });
+
+    for (const exam of exams) {
+
+      // ======================
+      // 4. XOÁ QUESTION
+      // ======================
+      const questions = await Question.find({ examId: exam._id });
+
+      for (const question of questions) {
+
+        // xoá ảnh question
+        if (question.image) {
+
+          const key = question.image.replace(
+            `${process.env.R2_PUBLIC_URL}/`,
+            ""
+          );
+
+          await r2.send(new DeleteObjectCommand({
+            Bucket: process.env.R2_BUCKET_NAME,
+            Key: key
+          }));
+        }
+
+        // ======================
+        // 5. XOÁ OPTION
+        // ======================
+        const options = await Option.find({
+          questionId: question._id
         });
 
-        const questionIds = questions.map(q => q._id);
+        await Promise.all(
+          options.map(async (opt) => {
 
-        // xoá options
+            if (opt.image) {
+
+              const key = opt.image.replace(
+                `${process.env.R2_PUBLIC_URL}/`,
+                ""
+              );
+
+              await r2.send(new DeleteObjectCommand({
+                Bucket: process.env.R2_BUCKET_NAME,
+                Key: key
+              }));
+            }
+
+          })
+        );
+
         await Option.deleteMany({
-            questionId: { $in: questionIds }
+          questionId: question._id
         });
 
-        // xoá questions
-        await Question.deleteMany({
-            lectureId
-        });
+      }
 
-        res.json({
-            message: "Delete questions success",
-            deletedQuestions: questionIds.length
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Delete questions failed",
-            error: error.message
-        });
+      await Question.deleteMany({
+        examId: exam._id
+      });
 
     }
+
+    await Exam.deleteMany({ lectureId });
+
+    // ======================
+    // 6. XOÁ LECTURE
+    // ======================
+    await Lecture.findByIdAndDelete(lectureId);
+
+    return res.json({
+      message: "Delete lecture success"
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Delete lecture failed",
+      error: error.message
+    });
+
+  }
 
 };
 module.exports = {
