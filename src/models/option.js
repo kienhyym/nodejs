@@ -9,7 +9,9 @@ const optionSchema = new mongoose.Schema({
 
   content: String,
 
-  image: String,
+  imageUrl: String,
+
+  fileName: String,
 
   isCorrect: {
     type: Boolean,

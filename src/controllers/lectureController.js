@@ -456,10 +456,8 @@ const getQuestionsByLecture = async (req, res) => {
 
 };
 const importQuestions = async (req, res) => {
-
     try {
-
-        const lectureId = req.params.lectureId;
+        const examId = req.params.examId;
         if (!req.file) {
             return res.status(400).json({
                 message: "File JSON is required"
@@ -472,28 +470,24 @@ const importQuestions = async (req, res) => {
 
         for (const q of questions) {
             const question = await Question.create({
-                lectureId,
+                examId,
                 content: q.content,
                 type: q.type,
-                image: q.image
             });
 
             const options = q.options.map(opt => ({
                 questionId: question._id,
                 content: opt.content,
                 isCorrect: opt.isCorrect,
-                image: opt.image
             }));
 
             await Option.insertMany(options);
-
             createdQuestions++;
-
         }
 
         res.json({
             message: "Import questions success",
-            lectureId,
+            examId,
             total: createdQuestions
         });
 
@@ -528,7 +522,6 @@ const deleteQuestionsByLecture = async (req, res) => {
     // 1. XOÁ THUMBNAIL
     // ======================
     if (lecture.thumbnail) {
-
       const key = lecture.thumbnail.replace(
         `${process.env.R2_PUBLIC_URL}/`,
         ""

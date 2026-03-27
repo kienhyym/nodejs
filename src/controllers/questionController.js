@@ -2,223 +2,17 @@ const Question = require("../models/question");
 const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const r2 = require("../config/cloudR2");
 const Option = require("../models/option");
-const Chapter = require("../models/chapter");
+const Exam = require("../models/exam");
 const Lecture = require("../models/lecture");
+
+
 
 const createQuestion = async (req, res) => {
 
     try {
 
-        const { examId, content, type } = req.body;
-
-        let imageUrl = null;
-
-        if (req.file) {
-
-            const file = req.file;
-
-            const fileName = `images/${Date.now()}-${file.originalname}`;
-
-            const command = new PutObjectCommand({
-                Bucket: process.env.R2_BUCKET_NAME,
-                Key: fileName,
-                Body: file.buffer,
-                ContentType: file.mimetype
-            });
-
-            await r2.send(command);
-
-            imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-
-        }
-
-        const question = await Question.create({
-            examId,
-            content,
-            type,
-            image: imageUrl
-        });
-
-        res.json({
-            message: "Create question success",
-            data: question
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Create question failed",
-            error: error.message
-        });
-
-    }
-
-};
-
-const updateQuestion = async (req, res) => {
-
-    try {
-
-        const questionId = req.params.id;
-
-        const question = await Question.findById(questionId);
-
-        if (!question) {
-            return res.status(404).json({
-                message: "Question not found"
-            });
-        }
-
-        const { content, type } = req.body;
-
-        if (content) question.content = content;
-
-        if (type) question.type = type;
-
-        if (req.file) {
-
-            const file = req.file;
-
-            const fileName = `question/${Date.now()}-${file.originalname}`;
-
-            const command = new PutObjectCommand({
-                Bucket: process.env.R2_BUCKET_NAME,
-                Key: fileName,
-                Body: file.buffer,
-                ContentType: file.mimetype
-            });
-
-            await r2.send(command);
-
-            question.image = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-
-        }
-
-        await question.save();
-
-        res.json({
-            message: "Update question success",
-            data: question
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Update question failed",
-            error: error.message
-        });
-
-    }
-
-};
-const getQuestions = async (req, res) => {
-
-    try {
-
-        const questions = await Question.find()
-            .populate("examId", "title")
-            .sort({ createdAt: -1 });
-
-        res.json({
-            message: "Get questions success",
-            data: questions
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Get questions failed",
-            error: error.message
-        });
-
-    }
-
-};
-
-const getQuestionDetail = async (req, res) => {
-
-    try {
-
-        const questionId = req.params.id;
-
-        const question = await Question.findById(questionId);
-
-        if (!question) {
-            return res.status(404).json({
-                message: "Question not found"
-            });
-        }
-
-        const options = await Option.find({
-            questionId
-        });
-
-        res.json({
-            question,
-            options
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Get question detail failed",
-            error: error.message
-        });
-
-    }
-
-};
-const deleteQuestion = async (req, res) => {
-
-    try {
-
-        const questionId = req.params.id;
-        const question = await Question.findById(questionId);
-
-        if (!question) {
-            return res.status(404).json({
-                message: "Question not found"
-            });
-        }
-
-        await Option.deleteMany({
-            questionId
-        });
-
-        await Question.findByIdAndDelete(questionId);
-
-        res.json({
-            message: "Delete question success"
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            message: "Delete question failed",
-            error: error.message
-        });
-
-    }
-
-};
-
-
-const createQuestionWithOptions = async (req, res) => {
-
-    try {
-
         const { question, type, correctAnswer } = req.body;
-        const lectureId = req.params.lectureId;
+        const examId = req.params.examId;
 
         const options = req.body.options || [];
         // kiểm tra đáp án đúng
@@ -278,45 +72,48 @@ const createQuestionWithOptions = async (req, res) => {
         const questionImageFile = req.files.find(
             f => f.fieldname === "questionImage"
         );
-
+        let fileNameQuestions = null
         if (questionImageFile) {
 
-            const fileName = `questions/${Date.now()}-${questionImageFile.originalname}`;
+            fileNameQuestions = `images/${Date.now()}-${questionImageFile.originalname}`;
 
             await r2.send(new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
-                Key: fileName,
+                Key: fileNameQuestions,
                 Body: questionImageFile.buffer,
                 ContentType: questionImageFile.mimetype
             }));
 
-            questionImageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+            questionImageUrl = `${process.env.R2_PUBLIC_URL}/${fileNameQuestions}`;
 
         }
 
         // tạo question
         const newQuestion = await Question.create({
-            lectureId: lectureId,
+            examId,
             content: question,
             type,
-            image: questionImageUrl
+            imageUrl: questionImageUrl,
+            fileName: fileNameQuestions
         });
+
         const createdOptions = [];
         for (const [index, item] of options.entries()) {
 
             const optionImageFile = req.files.find(
-                f => f.fieldname === `options[${index}][image]`
+                f => f.fieldname === `options[${index}][imageUrl]`
             );
-            let imageUrl = null;
+            let imageUrlOption = null;
+            let fileNameOption = null;
             if (optionImageFile) {
-                const fileName = `images/${Date.now()}-${optionImageFile.originalname}`;
+                fileNameOption = `images/${Date.now()}-${optionImageFile.originalname}`;
                 await r2.send(new PutObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
-                    Key: fileName,
+                    Key: fileNameOption,
                     Body: optionImageFile.buffer,
                     ContentType: optionImageFile.mimetype
                 }));
-                imageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
+                imageUrlOption = `${process.env.R2_PUBLIC_URL}/${fileNameOption}`;
             }
             let isCorrect = false;
 
@@ -331,7 +128,8 @@ const createQuestionWithOptions = async (req, res) => {
             const option = await Option.create({
                 questionId: newQuestion._id,
                 content: item.text,
-                image: imageUrl,
+                imageUrl: imageUrlOption,
+                fileName: fileNameOption,
                 isCorrect
             });
             createdOptions.push(option);
@@ -353,7 +151,7 @@ const createQuestionWithOptions = async (req, res) => {
     }
 
 };
-const getQuestionDetailById = async (req, res) => {
+const getQuestion = async (req, res) => {
 
     try {
 
@@ -374,18 +172,11 @@ const getQuestionDetailById = async (req, res) => {
         });
 
         return res.json({
-            question: {
-                _id: question._id,
-                content: question.content,
-                type: question.type,
-                image: question.image
-            },
+            question,
             options
         });
 
     } catch (error) {
-
-        console.error(error);
 
         return res.status(500).json({
             message: "Get question failed",
@@ -397,14 +188,12 @@ const getQuestionDetailById = async (req, res) => {
 };
 
 
-const deleteQuestionById = async (req, res) => {
+const deleteQuestion = async (req, res) => {
 
     try {
 
-        const { id } = req.params;
-        const questionId = id
+        const { questionId } = req.params;
         const question = await Question.findById(questionId);
-
         if (!question) {
             return res.status(500).json({
                 message: "Question not found"
@@ -412,9 +201,8 @@ const deleteQuestionById = async (req, res) => {
         }
 
         // xoá ảnh question nếu có
-        if (question.image) {
-
-            const key = question.image.replace(
+        if (question.fileName) {
+            const key = question.fileName.replace(
                 `${process.env.R2_PUBLIC_URL}/`,
                 ""
             );
@@ -442,9 +230,9 @@ const deleteQuestionById = async (req, res) => {
         // xoá ảnh option
         for (const opt of options) {
 
-            if (opt.image) {
+            if (opt.fileName) {
 
-                const key = opt.image.replace(
+                const key = opt.fileName.replace(
                     `${process.env.R2_PUBLIC_URL}/`,
                     ""
                 );
@@ -472,9 +260,6 @@ const deleteQuestionById = async (req, res) => {
         });
 
     } catch (error) {
-
-        console.error(error);
-
         return res.status(500).json({
             message: "Delete question failed",
             error: error.message
@@ -484,10 +269,8 @@ const deleteQuestionById = async (req, res) => {
 
 };
 
-const updateQuestionWithOptions = async (req, res) => {
-
+const updateQuestion = async (req, res) => {
     try {
-
         const { questionId } = req.params;
         const { question, type, correctAnswer, oldImage } = req.body;
         const options = req.body.options || [];
@@ -511,7 +294,6 @@ const updateQuestionWithOptions = async (req, res) => {
         }
 
         if (correctCount === 0) {
-
             return res.status(500).json({
                 message: "Bạn chưa chọn đáp án đúng"
             });
@@ -519,7 +301,6 @@ const updateQuestionWithOptions = async (req, res) => {
         }
 
         if (type === "single" && correctCount > 1) {
-
             return res.status(500).json({
                 message: "Câu hỏi single chỉ được có 1 đáp án đúng"
             });
@@ -548,8 +329,8 @@ const updateQuestionWithOptions = async (req, res) => {
         // Thêm ảnh mới
         if (questionImageFile) {
             // Xoá ảnh cũ
-            if (existingQuestion.image) {
-                const existingQuestionImage = existingQuestion.image.replace(
+            if (existingQuestion.fileName) {
+                const existingQuestionImage = existingQuestion.fileName.replace(
                     `${process.env.R2_PUBLIC_URL}/`,
                     ""
                 );
@@ -559,7 +340,6 @@ const updateQuestionWithOptions = async (req, res) => {
                 }));
 
             }
-
             const fileName = `images/${Date.now()}-${questionImageFile.originalname}`;
             await r2.send(new PutObjectCommand({
                 Bucket: process.env.R2_BUCKET_NAME,
@@ -568,14 +348,14 @@ const updateQuestionWithOptions = async (req, res) => {
                 ContentType: questionImageFile.mimetype
             }));
             questionImageUrl = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-            existingQuestion.image = questionImageUrl;
+            existingQuestion.imageUrl = questionImageUrl;
+            existingQuestion.fileName = fileName;
         }
         else {
-
             if (oldImage === 'null') {
                 // Xoá ảnh cũ
-                if (existingQuestion.image) {
-                    const existingQuestionImage = existingQuestion.image.replace(
+                if (existingQuestion.fileName) {
+                    const existingQuestionImage = existingQuestion.fileName.replace(
                         `${process.env.R2_PUBLIC_URL}/`,
                         ""
                     );
@@ -584,9 +364,11 @@ const updateQuestionWithOptions = async (req, res) => {
                         Key: existingQuestionImage
                     }));
                 }
-                existingQuestion.image = null;
+                existingQuestion.imageUrl = null;
+                existingQuestion.fileName = null;
+
             } else {
-                existingQuestion.image = oldImage;
+                existingQuestion.imageUrl = oldImage;
             }
         }
         await existingQuestion.save();
@@ -604,8 +386,9 @@ const updateQuestionWithOptions = async (req, res) => {
                 f => f.fieldname === `options[${item.index}][newImage]`
             );
             let imageUrl = null;
+            let fileName = null;
             if (optionImageFile) {
-                const fileName = `images/${Date.now()}-${optionImageFile.originalname}`;
+                fileName = `images/${Date.now()}-${optionImageFile.originalname}`;
                 await r2.send(new PutObjectCommand({
                     Bucket: process.env.R2_BUCKET_NAME,
                     Key: fileName,
@@ -627,7 +410,8 @@ const updateQuestionWithOptions = async (req, res) => {
             const option = await Option.create({
                 questionId,
                 content: item.content,
-                image: imageUrl,
+                imageUrl,
+                fileName,
                 isCorrect: isCorrect
             });
         }
@@ -648,8 +432,8 @@ const updateQuestionWithOptions = async (req, res) => {
 
                 opt.isCorrect = isCorrect
                 opt.content = options[index].content
-                if (opt.image && !options[index]?.oldImage) {
-                    const key = opt.image.replace(
+                if (opt.imageUrl && !options[index]?.oldImage) {
+                    const key = opt.imageUrl.replace(
                         `${process.env.R2_PUBLIC_URL}/`,
                         ""
                     );
@@ -657,7 +441,7 @@ const updateQuestionWithOptions = async (req, res) => {
                         Bucket: process.env.R2_BUCKET_NAME,
                         Key: key
                     }));
-                    opt.image = null
+                    opt.imageUrl = null
                 }
 
                 const optionImageFileNew = req.files.find(
@@ -665,8 +449,8 @@ const updateQuestionWithOptions = async (req, res) => {
                 );
                 let imageUrlNew = null;
                 if (optionImageFileNew) {
-                    if (opt?.image) {
-                        const key = opt.image.replace(
+                    if (opt?.fileName) {
+                        const key = opt.fileName.replace(
                             `${process.env.R2_PUBLIC_URL}/`,
                             ""
                         );
@@ -683,12 +467,12 @@ const updateQuestionWithOptions = async (req, res) => {
                         ContentType: optionImageFileNew.mimetype
                     }));
                     imageUrlNew = `${process.env.R2_PUBLIC_URL}/${fileName}`;
-                    opt.image = imageUrlNew
+                    opt.imageUrl = imageUrlNew
                 }
                 await opt.save();
             } else {
-                if (opt?.image) {
-                    const key = opt.image.replace(
+                if (opt?.fileName) {
+                    const key = opt.fileName.replace(
                         `${process.env.R2_PUBLIC_URL}/`,
                         ""
                     );
@@ -706,55 +490,41 @@ const updateQuestionWithOptions = async (req, res) => {
         });
 
     } catch (error) {
-
-        console.error(error);
-
         res.status(500).json({
             message: "Update question failed",
             error: error.message
         });
-
     }
-
 };
-const getAllQuestion = async (req, res) => {
+
+const getQuestions = async (req, res) => {
 
     try {
-        const chapters = await Chapter.find()
-        for (const chapter of chapters) {
-            const lecture = await Lecture.find()
-        }
-        const questions = await Question.find()
-            .populate("examId", "title")
-            .sort({ createdAt: -1 });
 
+        const examId = req.params.examId;
+        const exam = await Exam.findById(examId);
+        const lecture = await Lecture.findOne({ _id: exam.lectureId });
+        const questions = await Question.find({ examId }).sort({ createdAt: 1 });
         res.json({
-            message: "Get questions success",
-            data: questions
+            message: "OK",
+            data: {
+                lectureTitle: lecture?.title,
+                examTitle: exam?.title,
+                questions
+            }
         });
-
     } catch (error) {
-
-        console.error(error);
-
         res.status(500).json({
             message: "Get questions failed",
             error: error.message
         });
-
     }
-
 };
 
 module.exports = {
     createQuestion,
-    updateQuestion,
+    getQuestion,
     getQuestions,
-    getQuestionDetail,
     deleteQuestion,
-    createQuestionWithOptions,
-    getQuestionDetailById,
-    deleteQuestionById,
-    updateQuestionWithOptions,
-    getAllQuestion
+    updateQuestion,
 };

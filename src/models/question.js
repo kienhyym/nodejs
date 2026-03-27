@@ -9,7 +9,9 @@ const questionSchema = new mongoose.Schema({
 
   content: String,
 
-  image: String,
+  imageUrl: String,
+
+  fileName: String,
 
   type: {
     type: String,

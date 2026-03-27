@@ -6,8 +6,7 @@ const auth = require('../middleware/auth');
 const { createLecture, getLectures, getLectureDetail, updateLecture, deleteLecture, countExamStatusByLecture, getQuestionsByLecture, importQuestions, deleteQuestionsByLecture } = require("../controllers/lectureController");
 const upload = require("../middleware/upload");
 const { createExam, updateExam, getExams, getExamDetail, deleteExam, toggleExamStatus } = require('../controllers/examController');
-const { createQuestion, updateQuestion, getQuestions, getQuestionDetail, deleteQuestion, createQuestionWithOptions, getQuestionDetailById, deleteQuestionById, updateQuestionWithOptions } = require('../controllers/questionController');
-const { updateOption, createOption, getOptions, getOptionDetail, deleteOption } = require('../controllers/optionController');
+const { createQuestion, getQuestions, getQuestion, deleteQuestion, updateQuestion } = require('../controllers/questionController');
 const { createExtend, getExtends, getExtendDetail, deleteExtend, updateExtend } = require('../controllers/extendController');
 const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, deleteKnowledge, getPDF } = require('../controllers/knowledgeController');
 const { updateTitleVideo } = require('../controllers/videoController');
@@ -65,60 +64,17 @@ routerAPI.delete("/exams/:id", deleteExam);
 routerAPI.patch("/exams/:id/status", toggleExamStatus);
 
 // +++++++++ QUESTIONS ++++++++++++++
-
-routerAPI.post(
-  "/questions",
-  upload.single("image"),
-  createQuestion
-);
-
-routerAPI.put(
-  "/questions/:id",
-  upload.single("image"),
-  updateQuestion
-);
-routerAPI.get("/questions", getQuestions);
-routerAPI.get("/questions/:id", getQuestionDetail);
-routerAPI.delete("/questions/:id", deleteQuestion);
-
-routerAPI.post(
-  "/questions/options/:lectureId",
-  upload.any(),
-  createQuestionWithOptions
-);
-routerAPI.get("/question/:questionId", getQuestionDetailById);
-routerAPI.delete("/question/:id", deleteQuestionById);
-routerAPI.put(
-  "/question/:questionId",
-  upload.any(),
-  updateQuestionWithOptions
-);
-
-// +++++++++ OPTIONS ++++++++++++++
-routerAPI.post(
-  "/options",
-  upload.single("image"),
-  createOption
-);
-
-routerAPI.put(
-  "/options/:id",
-  upload.single("image"),
-  updateOption
-);
-
-routerAPI.get("/options", getOptions);
-
-routerAPI.get("/options/:id", getOptionDetail);
-
-routerAPI.delete("/options/:id", deleteOption);
+routerAPI.post("/questions/:examId", upload.any(), createQuestion);
+routerAPI.put("/question/:questionId", upload.any(), updateQuestion);
+routerAPI.get("/questions/:examId", getQuestions);
+routerAPI.get("/question/:questionId", getQuestion);
+routerAPI.delete("/question/:questionId", deleteQuestion);
 
 
 // +++++++++ EXTEND ++++++++++++++
-
 routerAPI.post(
   "/extend",
-   upload.single("image"),
+  upload.single("image"),
   createExtend
 );
 routerAPI.put(
@@ -141,7 +97,7 @@ routerAPI.post(
 
 routerAPI.put(
   "/knowledge/:id",
-   upload.single("image"),
+  upload.single("image"),
   updateKnowledge
 );
 routerAPI.get("/knowledge", getKnowledges);
@@ -150,10 +106,10 @@ routerAPI.delete("/knowledge/:id", deleteKnowledge);
 
 
 
-routerAPI.get("/lectures/:lectureId/questions", getQuestionsByLecture);
+routerAPI.get("/lectures/:examId/questions", getQuestionsByLecture);
 
 routerAPI.post(
-  "/lectures/:lectureId/questions/import",
+  "/lectures/:examId/questions/import",
   upload.single("file"),
   importQuestions
 );
