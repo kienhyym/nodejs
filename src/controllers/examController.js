@@ -7,7 +7,6 @@ const createExam = async (req, res) => {
   try {
 
     const { lectureId, title, timeLimit, totalQuestion, type, status } = req.body;
-    console.log("🚀 ~ createExam ~ lectureId:", req.body)
 
     if (!lectureId || !title) {
       return res.status(500).json({
