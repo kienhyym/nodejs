@@ -7,8 +7,7 @@ const Lecture = require("../models/lecture");
 
 
 
-const createQuestion = async (req, res) => {
-
+const createQuestion = async (req, res) => { 
     try {
 
         const { question, type, correctAnswer } = req.body;
@@ -99,9 +98,8 @@ const createQuestion = async (req, res) => {
 
         const createdOptions = [];
         for (const [index, item] of options.entries()) {
-
             const optionImageFile = req.files.find(
-                f => f.fieldname === `options[${index}][imageUrl]`
+                f => f.fieldname === `options[${index}][image]`
             );
             let imageUrlOption = null;
             let fileNameOption = null;

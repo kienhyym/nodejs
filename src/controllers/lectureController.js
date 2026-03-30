@@ -509,7 +509,6 @@ const deleteQuestionsByLecture = async (req, res) => {
   try {
 
     const { lectureId } = req.params;
-
     const lecture = await Lecture.findById(lectureId);
 
     if (!lecture) {
@@ -521,8 +520,8 @@ const deleteQuestionsByLecture = async (req, res) => {
     // ======================
     // 1. XOÁ THUMBNAIL
     // ======================
-    if (lecture.thumbnail) {
-      const key = lecture.thumbnail.replace(
+    if (lecture.thumbnailName) {
+      const key = lecture.thumbnailName.replace(
         `${process.env.R2_PUBLIC_URL}/`,
         ""
       );
@@ -541,9 +540,9 @@ const deleteQuestionsByLecture = async (req, res) => {
     await Promise.all(
       videos.map(async (video) => {
 
-        if (video.videoUrl) {
+        if (video.fileName) {
 
-          const key = video.videoUrl.replace(
+          const key = video.fileName.replace(
             `${process.env.R2_PUBLIC_URL}/`,
             ""
           );
@@ -574,9 +573,9 @@ const deleteQuestionsByLecture = async (req, res) => {
       for (const question of questions) {
 
         // xoá ảnh question
-        if (question.image) {
+        if (question.fileName) {
 
-          const key = question.image.replace(
+          const key = question.fileName.replace(
             `${process.env.R2_PUBLIC_URL}/`,
             ""
           );
@@ -597,9 +596,9 @@ const deleteQuestionsByLecture = async (req, res) => {
         await Promise.all(
           options.map(async (opt) => {
 
-            if (opt.image) {
+            if (opt.fileName) {
 
-              const key = opt.image.replace(
+              const key = opt.fileName.replace(
                 `${process.env.R2_PUBLIC_URL}/`,
                 ""
               );
