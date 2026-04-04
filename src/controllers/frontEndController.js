@@ -105,8 +105,71 @@ const getLectureDetailAndOpenlectures = async (req, res) => {
     }
 };
 
+const getOpenChaptersNolecture = async (req, res) => {
+    try {
+
+        const chapters = await Chapter.find({ status: true });
+
+        const resx = [];
+
+        for (const chapter of chapters) {
+
+            const lectures = await Lecture.find({
+                chapterId: chapter._id,
+                status: true
+            }).sort({ createdAt: -1 });
+
+            let lectureWithExam = [];
+            for (const lecture of lectures) {
+
+                const experiment = await Exam.find({
+                    lectureId: lecture._id,
+                    status: true,
+                    type: "experiment"
+                });
+                let newExperiment = [];
+                if (experiment && experiment.length > 0) {
+                    newExperiment = experiment.map(item => ({
+                        ...item.toObject(), // 🔥 FIX
+                        titleLecture: lecture.title,
+                    }));
+                }
+                  lectureWithExam.push(...newExperiment);
+                const exam = await Exam.find({
+                    lectureId: lecture._id,
+                    status: true,
+                    type: "exam"
+                });
+                let newExam = [];
+                if (exam && exam.length > 0) {
+                    newExam = exam.map(item => ({
+                        ...item.toObject(),
+                        titleLecture: lecture.title,
+                    }));
+                }
+                lectureWithExam.push(...newExam);
+            }
+            const obj = chapter.toObject();
+            obj.exams = lectureWithExam;
+            resx.push(obj);
+        }
+
+        return res.json({
+            data: resx
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            message: "Get chapters failed"
+        });
+
+    }
+};
+
 
 module.exports = {
     getOpenChapters,
-    getLectureDetailAndOpenlectures
+    getLectureDetailAndOpenlectures,
+    getOpenChaptersNolecture
 };

@@ -12,7 +12,7 @@ const { createKnowledge, updateKnowledge, getKnowledges, getKnowledgeDetail, del
 const { updateTitleVideo } = require('../controllers/videoController');
 const { createAchievements, getAchievements } = require('../controllers/achievementsController');
 const { createChapter, updateChapter, getChapters, deleteChapter, getChapter } = require('../controllers/chapterController');
-const { getOpenChapters, getLectureDetailAndOpenlectures } = require('../controllers/frontEndController');
+const { getOpenChapters, getLectureDetailAndOpenlectures, getOpenChaptersNolecture } = require('../controllers/frontEndController');
 
 const routerAPI = express.Router();
 
@@ -130,6 +130,7 @@ routerAPI.get("/chapters", getChapters);
 routerAPI.get("/chapter/:id", getChapter);
 routerAPI.delete("/chapter/:chapterId", deleteChapter);
 routerAPI.get("/chapters/open", getOpenChapters);
+routerAPI.get("/chapters/open/no-lecture", getOpenChaptersNolecture);
 routerAPI.get("/lecture/open/lectures/:id", getLectureDetailAndOpenlectures);
 
 
