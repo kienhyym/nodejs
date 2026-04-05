@@ -167,9 +167,25 @@ const getOpenChaptersNolecture = async (req, res) => {
     }
 };
 
+const getLectureOpenFisrt = async (req, res) => {
+    try {
+        const lecture = await Lecture.findOne({});
+        return res.json({
+            message: "Get lecture detail success",
+            data: lecture
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Get lecture failed"
+        });
+    }
+};
+
 
 module.exports = {
     getOpenChapters,
     getLectureDetailAndOpenlectures,
-    getOpenChaptersNolecture
+    getOpenChaptersNolecture,
+    getLectureOpenFisrt
 };
