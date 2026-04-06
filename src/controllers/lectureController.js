@@ -407,7 +407,7 @@ const getQuestionsByLecture = async (req, res) => {
 
     try {
 
-        const examId = req.params.lectureId;
+        const examId = req.params.examId;
 
         const exam = await Exam.findById(examId);
         const lecture = await Lecture.findOne({ _id: exam.lectureId });
