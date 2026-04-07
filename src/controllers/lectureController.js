@@ -427,7 +427,7 @@ const getQuestionsByLecture = async (req, res) => {
             result.push({
                 _id: q._id,
                 content: q.content,
-                image: q.image,
+                imageUrl: q.imageUrl,
                 type: q.type,
                 options
             });
