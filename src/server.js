@@ -11,6 +11,8 @@ const port = process.env.PORT || 8888;
 
 //config corssd
 app.use(cors());
+app.options('*', cors());
+
 // app.use(delay);
 
 //config req.body
