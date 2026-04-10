@@ -9,9 +9,14 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 8888;
 
-//config corssd
-app.use(cors());
-app.options('*', cors());
+app.use(cors({
+  origin: 'https://admin-hoc8.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
+
+app.options('*', cors()); // 👈 bắt buộc
 
 // app.use(delay);
 
