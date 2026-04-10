@@ -55,6 +55,7 @@ const createKnowledge = async (req, res) => {
 const getKnowledges = async (req, res) => {
     try {
         const knowledgeList = await Knowledge.find().sort({ createdAt: -1 });
+        console.log("🚀 ~ getKnowledges ~ knowledgeList:", knowledgeList)
         return res.json({
             message: "Get knowledges success",
             data: knowledgeList
